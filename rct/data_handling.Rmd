@@ -1,0 +1,1341 @@
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: data_handling.Rmd  
+# program purpose: program that performs some data manipulation and derives variables for anaylsis 
+# author: Silvia Cicconi  
+###
+```
+
+```{r LOAD ALL DATASETS}
+
+for(i in country_list){
+
+#check list of data
+ assign(paste("list_dat", `i`, sep="_"), list.files(get(paste("dir_dat", `i`, sep="_")), pattern = "xlsx")) #list of all datasets contained in the data directory
+ print(paste("Loading the following datasets for", `i`))
+ print(get(paste("list_dat", `i`, sep="_"))) #show the list
+
+#load data for analysis
+ #screeening
+ assign(paste("scrn", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_dat", `i`, sep="_")), get(paste("list_dat", `i`, sep="_"))[which(get(paste("list_dat", `i`, sep="_"))==paste("01_timci_screening_data", ".xlsx", sep=""))])))
+ print(paste(paste("01_timci_screening_data", ".xlsx", sep=""), ", number of rows:", nrow(get(paste("scrn", `i`, sep="_"))))) #
+ #d0
+ assign(paste("d0", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_dat", `i`, sep="_")), get(paste("list_dat", `i`, sep="_"))[which(get(paste("list_dat", `i`, sep="_"))==paste("02_timci_day0_data", ".xlsx", sep=""))])))
+ print(paste(paste("02_timci_day0_data", ".xlsx", sep=""), ", number of rows:", nrow(get(paste("d0", `i`, sep="_")))))
+ #d0 repeat
+ assign(paste("d0_rep", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_dat", `i`, sep="_")), get(paste("list_dat", `i`, sep="_"))[which(get(paste("list_dat", `i`, sep="_"))==paste("02b_timci_repeat_data", ".xlsx", sep=""))])))
+ print(paste(paste("02b_timci_repeat_data", ".xlsx", sep=""), ", number of rows:", nrow(get(paste("d0_rep", `i`, sep="_")))))
+ #d7
+ assign(paste("d7", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_dat", `i`, sep="_")), get(paste("list_dat", `i`, sep="_"))[which(get(paste("list_dat", `i`, sep="_"))==paste("04a_timci_followup_day7_data", ".xlsx", sep=""))])))
+ print(paste(paste("04a_timci_followup_day7_data", ".xlsx", sep=""), ", number of rows:", nrow(get(paste("d7", `i`, sep="_")))))
+ #hospital record
+ assign(paste("hos", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_dat", `i`, sep="_")), get(paste("list_dat", `i`, sep="_"))[which(get(paste("list_dat", `i`, sep="_"))==paste("05a_timci_followup_hospit_data", ".xlsx", sep=""))])))
+ print(paste(paste("05a_timci_followup_hospit_data", ".xlsx", sep=""), ", number of rows:", nrow(get(paste("hos", `i`, sep="_")))))
+ #d28
+ assign(paste("d28", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_dat", `i`, sep="_")), get(paste("list_dat", `i`, sep="_"))[which(get(paste("list_dat", `i`, sep="_"))==paste("06a_timci_followup_day28_data", ".xlsx", sep=""))])))
+ print(paste(paste("06a_timci_followup_day28_data", ".xlsx", sep=""), ", number of rows:", nrow(get(paste("d28", `i`, sep="_")))))
+ #withdrawls
+ assign(paste("wth", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_dat", `i`, sep="_")), get(paste("list_dat", `i`, sep="_"))[which(get(paste("list_dat", `i`, sep="_"))==paste("99_withdrawal_data", ".xlsx", sep=""))])))
+ print(paste(paste("99_withdrawal_data", ".xlsx", sep=""), ", number of rows:", nrow(get(paste("wth", `i`, sep="_")))))
+
+
+}
+
+#save d0 variables names
+vars_d0_in <- names(d0_in)
+vars_d0_tz <- names(d0_tz)
+
+```
+
+```{r LOAD CODEBOOKS}
+
+for(i in country_list){
+
+#check list of data
+ assign(paste("list_cb", `i`, sep="_"), list.files(get(paste("dir_cb", `i`, sep="_")), pattern = "xlsx")) #list of all datasets contained in the data directory
+ print(paste("Loading the following codebooks (categorical variables) for", `i`))
+ print(get(paste("list_cb", `i`, sep="_"))) #show the list
+
+#load data for analysis
+ assign(paste("d7_cb", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_cb", `i`, sep="_")), get(paste("list_cb", `i`, sep="_"))[grepl("Day7", get(paste("list_cb", `i`, sep="_")))==T][1]))) #d7
+ assign(paste("d28_cb", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_cb", `i`, sep="_")), get(paste("list_cb", `i`, sep="_"))[grepl("Day28", get(paste("list_cb", `i`, sep="_")))==T][1]))) #d28
+ assign(paste("hos_cb", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_cb", `i`, sep="_")), get(paste("list_cb", `i`, sep="_"))[grepl("Hospital", get(paste("list_cb", `i`, sep="_")))==T][1]))) #hosp records
+ assign(paste("wth_cb", `i`, sep="_"), read.xlsx(file.path(get(paste("dir_cb", `i`, sep="_")), get(paste("list_cb", `i`, sep="_"))[grepl("withdrawal", get(paste("list_cb", `i`, sep="_")))==T][1]))) #withdrawals
+}
+
+#load corrected version of codebook
+d0_cb_in <- read.xlsx(paste0(file.path(dir_cb_in), "/01a TIMCI-RCT-Day0 form_codebook_v2.xlsx"))
+d0_cb_tz <- read.xlsx(paste0(file.path(dir_cb_tz), "/01a-TIMCI-CRF-Facility-ref-form_codebook_v2.xlsx"))
+
+
+
+```
+
+```{r FORMAT CODEBOOKS FOR EASE OF USE IN THE ANALYSIS}
+
+#when db_name is missing, replace with name
+d0_cb_in$db_name[which(is.na(d0_cb_in$db_name) & !is.na(d0_cb_in$name))] <- d0_cb_in$name[which(is.na(d0_cb_in$db_name) & !is.na(d0_cb_in$name))]
+d0_cb_tz$db_name[which(is.na(d0_cb_tz$db_name) & !is.na(d0_cb_tz$name))] <- d0_cb_tz$name[which(is.na(d0_cb_tz$db_name) & !is.na(d0_cb_tz$name))]
+
+d7_cb_in$db_name[which(is.na(d7_cb_in$db_name) & !is.na(d7_cb_in$name))] <- d7_cb_in$name[which(is.na(d7_cb_in$db_name) & !is.na(d7_cb_in$name))]
+d7_cb_tz$db_name[which(is.na(d7_cb_tz$db_name) & !is.na(d7_cb_tz$name))] <- d7_cb_tz$name[which(is.na(d7_cb_tz$db_name) & !is.na(d7_cb_tz$name))]
+
+d28_cb_in$db_name[which(is.na(d28_cb_in$db_name) & !is.na(d28_cb_in$name))] <- d28_cb_in$name[which(is.na(d28_cb_in$db_name) & !is.na(d28_cb_in$name))]
+d28_cb_tz$db_name[which(is.na(d28_cb_tz$db_name) & !is.na(d28_cb_tz$name))] <- d28_cb_tz$name[which(is.na(d28_cb_tz$db_name) & !is.na(d28_cb_tz$name))]
+
+hos_cb_in$db_name[which(is.na(hos_cb_in$db_name) & !is.na(hos_cb_in$name))] <- hos_cb_in$name[which(is.na(hos_cb_in$db_name) & !is.na(hos_cb_in$name))]
+hos_cb_tz$db_name[which(is.na(hos_cb_tz$db_name) & !is.na(hos_cb_tz$name))] <- hos_cb_tz$name[which(is.na(hos_cb_tz$db_name) & !is.na(hos_cb_tz$name))]
+
+wth_cb_in$db_name[which(is.na(wth_cb_in$db_name) & !is.na(wth_cb_in$name))] <- wth_cb_in$name[which(is.na(wth_cb_in$db_name) & !is.na(wth_cb_in$name))]
+wth_cb_tz$db_name[which(is.na(wth_cb_tz$db_name) & !is.na(wth_cb_tz$name))] <- wth_cb_tz$name[which(is.na(wth_cb_tz$db_name) & !is.na(wth_cb_tz$name))]
+
+#fill in db_name for all categories of each variable
+d0_cb_in <- fill(d0_cb_in, c("db_name","label"))
+d0_cb_tz <- fill(d0_cb_tz, c("db_name","label"))
+
+d7_cb_in <- fill(d7_cb_in, c("db_name","label"))
+d7_cb_tz <- fill(d7_cb_tz, c("db_name","label"))
+
+d28_cb_in <- fill(d28_cb_in, c("db_name","label"))
+d28_cb_tz <- fill(d28_cb_tz, c("db_name","label"))
+
+hos_cb_in <- fill(hos_cb_in, c("db_name","label"))
+hos_cb_tz <- fill(hos_cb_tz, c("db_name","label"))
+
+wth_cb_in <- fill(wth_cb_in, c("db_name","label"))
+wth_cb_tz <- fill(wth_cb_tz, c("db_name","label"))
+
+```
+
+```{r LOAD, FORMAT AND MERGE FACILITY INFORMATION}
+
+#load data
+fac_in <- read.xlsx(file.path(paste(dirname(dir_dat_in), "timci_research_facilities_india.xlsx", sep="/")), 1)
+fac_tz <- read.xlsx(file.path(paste(dirname(dir_dat_tz), "timci_research_facilities_tanzania.xlsx", sep="/")), 1)
+
+#add category for India (all rural)
+fac_in$category <- "Rural"
+
+#rename with capital letters
+fac_tz$category <- paste0(toupper(substr(fac_tz$category,1,1)), substr(fac_tz$category,2,nchar(fac_tz$category)))
+
+#merge with country specific day0 and scrn (only facility id, facility name, facility type, facility category, facility district and intervention)
+fac_in <- rename(fac_in, fid=facility_id); fac_tz <- rename(fac_tz, fid=facility_id) #rename facility id as in day0 and scrn for merging
+d0_in <- merge(d0_in, fac_in[, c("fid", "facility_name", "type", "category", "lvl2", "intervention")], by="fid", all.x=T); d0_tz <- merge(d0_tz, fac_tz[, c("fid", "facility_name", "type", "category", "lvl2", "intervention")], by="fid", all.x=T)
+scrn_in <- merge(scrn_in, fac_in[, c("fid", "facility_name", "type", "category", "lvl2", "intervention")], by="fid", all.x=T); scrn_tz <- merge(scrn_tz, fac_tz[, c("fid", "facility_name", "category", "type", "lvl2", "intervention")], by="fid", all.x=T)
+
+#drop if d0/scrn have unmatched facilities
+for(i in country_list){
+
+  if(length(setdiff( unique(get(paste("d0",`i`, sep="_"))[,"fid"]), unique(get(paste("fac",`i`, sep="_"))[,"fid"]) ))!=0){
+    print(paste("This facility is removed from d0 as not prensent in the facility list:", setdiff( unique(get(paste("d0",`i`, sep="_"))[,"fid"]), unique(get(paste("fac",`i`, sep="_"))[,"fid"]) )))
+    assign(paste("d0",`i`, sep="_"), get(paste("d0",`i`, sep="_"))[which(!get(paste("d0",`i`, sep="_"))[,"fid"]%in%setdiff( unique(get(paste("d0",`i`, sep="_"))[,"fid"]), unique(get(paste("fac",`i`, sep="_"))[,"fid"]) )  ),])
+  }
+
+  if(length(setdiff( unique(get(paste("scrn",`i`, sep="_"))[,"fid"]), unique(get(paste("fac",`i`, sep="_"))[,"fid"]) ))!=0){
+    print(paste("This facility is removed from scrn as not prensent in the facility list:", setdiff( unique(get(paste("scrn",`i`, sep="_"))[,"fid"]), unique(get(paste("fac",`i`, sep="_"))[,"fid"]) )))
+    assign(paste("scrn",`i`, sep="_"), get(paste("scrn",`i`, sep="_"))[which(!get(paste("scrn",`i`, sep="_"))[,"fid"]%in%setdiff( unique(get(paste("scrn",`i`, sep="_"))[,"fid"]), unique(get(paste("fac",`i`, sep="_"))[,"fid"]) )  ),])
+  }
+
+}
+
+
+```
+
+```{r LOAD CDSA DATA}
+
+#load data
+cdsa_tz <- read.xlsx(file.path(paste(dirname(dirname(dir_dat_tz)), "06_cdsa_exports/TIMCI_Tanzania_CDSA_consultations_research_facilities_deidentified.xlsx", sep="/")), 1)
+
+```
+
+```{r MERGE DATA FROM BOTH COUNTRIES}
+
+#merge datasets with information from both countries (add country flag first)
+scrn_in$country <- "in"; scrn_tz$country <- "tz"; scrn <- merge(scrn_in, scrn_tz, by = intersect(names(scrn_in), names(scrn_tz)), all=T)
+d0_in$country <- "in"; d0_tz$country <- "tz"; d0 <- merge(d0_in, d0_tz, by = intersect(names(d0_in), names(d0_tz)), all=T)
+d0_rep_in$country <- "in"; d0_rep_tz$country <- "tz"; d0_rep <- merge(d0_rep_in, d0_rep_tz, by = intersect(names(d0_rep_in), names(d0_rep_tz)), all=T)
+d7_in$country <- "in"; d7_tz$country <- "tz"; d7 <- merge(d7_in, d7_tz, by = intersect(names(d7_in), names(d7_tz)), all=T)
+d28_in$country <- "in"; d28_tz$country <- "tz"; d28 <- merge(d28_in, d28_tz, by = intersect(names(d28_in), names(d28_tz)), all=T)
+hos_in$country <- "in"; hos_tz$country <- "tz"; hos <- merge(hos_in, hos_tz, by = intersect(names(hos_in), names(hos_tz)), all=T)
+wth_in$country <- "in"; wth_tz$country <- "tz"; wth <- merge(wth_in, wth_tz, by = intersect(names(wth_in), names(wth_tz)), all=T)
+
+#check correct numbers after merging
+nrow(scrn); nrow(scrn_in); nrow(scrn_tz); table(scrn$country, useNA="ifany")
+nrow(d0); nrow(d0_in); nrow(d0_tz); table(d0$country, useNA="ifany")
+nrow(d0_rep); nrow(d0_rep_in); nrow(d0_rep_tz); table(d0_rep$country, useNA="ifany")
+nrow(d7); nrow(d7_in); nrow(d7_tz); table(d7$country, useNA="ifany")
+nrow(d28); nrow(d28_in); nrow(d28_tz); table(d28$country, useNA="ifany")
+nrow(hos); nrow(hos_in); nrow(hos_tz); table(hos$country, useNA="ifany")
+nrow(wth); nrow(wth_in); nrow(wth_tz); table(wth$country, useNA="ifany")
+
+#sort
+scrn <- scrn[order(scrn$country, scrn$date_visit),]
+d0 <- d0[order(d0$country, d0$date_visit, d0$child_id),]
+d0_rep <- d0_rep[order(d0_rep$country, d0_rep$date_visit, d0_rep$prev_id),]
+d7 <- d7[order(d7$country, d7$date_call, d7$child_id),]
+d28 <- d28[order(d28$country, d28$date_call, d28$child_id),]
+hos <- hos[order(hos$country, hos$date, hos$child_id),]
+wth <- wth[order(wth$country, wth$date, wth$child_id),]
+cdsa_tz <- cdsa_tz[order(cdsa_tz$closedAt, cdsa_tz$id),]
+
+#format country
+d0$country <- set_labels(factor(d0$country), labels=c("India", "Tanzania"))
+
+
+```
+
+```{r MERGE CDSA WITH D0}
+
+#merge by facility id
+cdsa_tz <- merge(cdsa_tz, d0[!duplicated(d0$facility_name), c("facility_name", "fid")], by="facility_name", all.x=T)
+
+
+```
+
+```{r FORMAT DATES}
+
+scrn$date_visit <- as.Date(scrn$date_visit, "%Y-%m-%d")
+d0$date_visit <- as.Date(d0$date_visit, "%Y-%m-%d")
+d0_rep$date_visit <- as.Date(d0_rep$date_visit, "%Y-%m-%d")
+d7$date_call <- as.Date(d7$date_call, "%Y-%m-%d")
+d7$start <- as.POSIXct(d7$start, format="%Y-%m-%d %H:%M:%OS")
+d7$date_death_day7 <- as.Date(d7$date_death_day7, "%Y-%m-%d")
+d7$date_hosp_day7 <- as.Date(d7$date_hosp_day7, "%Y-%m-%d")
+d28$date_call <- as.Date(d28$date_call, "%Y-%m-%d")
+d28$start <- as.POSIXct(d28$start, format="%Y-%m-%d %H:%M:%OS")
+d28$date_death_day28 <- as.Date(d28$date_death_day28, "%Y-%m-%d")
+d28$date_hosp_day28 <- as.Date(d28$date_hosp_day28, "%Y-%m-%d")
+wth$wth_dt <- as.Date(wth$date, "%Y-%m-%d")
+hos$hos_dt <- as.Date(hos$date, "%Y-%m-%d")
+cdsa_tz$date_visit <- as.Date(cdsa_tz$consultation_date, origin="1899-12-30")
+
+```
+
+```{r ELIGIBILITY AND RECRUITMENT FLAGS}
+
+#check codebooks for consultation reason
+d0_cb_in[which(d0_cb_in$db_name=="consult_reason"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="consult_reason"), c("db_name", "label", "value", "category")]
+
+##eligibility
+scrn$eligible <- 0
+scrn$eligible[which(scrn$age_incl==1 & scrn$age_excl==0 & (scrn$consult_reason==1 | scrn$oth_sickness==1) & scrn$repeat_consult==0 & scrn$cg_eligibility==1)] <- 1
+
+#flag ineligible cases with the different reasons
+scrn$inel_flag <- 0 #eligible
+scrn$inel_flag[which(scrn$eligible==0 & (scrn$age_incl==0 | scrn$age_excl==1))] <- 1 #age
+scrn$inel_flag[which(scrn$eligible==0 & scrn$cg_eligibility==0)] <- 2#age caregiver
+scrn$inel_flag[which(scrn$eligible==0 & scrn$consult_reason==2 & scrn$oth_sickness!=1)] <- 3#trauma only
+scrn$inel_flag[which(scrn$eligible==0 & scrn$consult_reason==3 & scrn$oth_sickness!=1)] <- 4#immunization only
+scrn$inel_flag[which(scrn$eligible==0 & scrn$consult_reason==4 & scrn$oth_sickness!=1)] <- 5#routine only
+scrn$inel_flag[which(scrn$eligible==0 & scrn$consult_reason==5)] <- 6#admission to an inpatient unit
+scrn$inel_flag[which(scrn$eligible==0 & scrn$consult_reason==97)] <- 7#declined to provide reasons for visiting the facility
+scrn$inel_flag[which(scrn$eligible==0 & scrn$cg_eligibility!=0 & scrn$repeat_consult==1)] <- 8#repeat visit
+
+##remove from screening records identified as duplicates in day0 during data management processing
+scrn <- scrn[which(!scrn$uuid%in%setdiff(scrn$uuid[which(scrn$eligible==1 & scrn$consent==1)], d0$uuid)),]
+
+```
+
+```{r KEEP EARLIEST RECORD FOR WTH}
+
+#generate sequence number for each child_id
+wth <- wth[order(wth$child_id, wth$wth_dt),] #sort by id and date (chronological order)
+wth$seq_id <- ave(wth$child_id, wth$child_id, FUN=seq_along) #sequence based on child_id and date
+
+#flag earliest record
+wth$wth_flag <- 0
+wth$wth_flag[with(wth, seq_id==ave(seq_id, child_id, FUN=min))] <- 1
+
+```
+
+```{r FLAG WITHDRAWALS IN DAY0}
+
+#merge withdrawals with day0
+d0 <- merge(d0, wth[which(wth$wth_flag==1), c("child_id", "wth_dt", "page-withdrawal_reason", "wth_flag")], by="child_id", all.x=T)
+
+#flag withdrawals occurring prior day7
+d0$wth_flag_d7 <- NA
+d0$wth_flag_d7[which((d0$wth_dt - d0$date_visit)>=7 & d0$wth_flag==1)] <- 0
+d0$wth_flag_d7[which((d0$wth_dt - d0$date_visit)<7 & d0$wth_flag==1)] <- 1
+
+#flag withdrawals occurring prior day28
+d0$wth_flag_d28 <- NA
+d0$wth_flag_d28[which((d0$wth_dt - d0$date_visit)>=28 & d0$wth_flag==1)] <- 0
+d0$wth_flag_d28[which((d0$wth_dt - d0$date_visit)<28 & d0$wth_flag==1)] <- 1
+
+```
+
+```{r MERGE ENROLMENT DATE INTO DAY7 AND DAY28 AND REMOVE RECORDS OF WITHDRAWN CHILDREN}
+
+d7 <- merge(d7, d0[, c("child_id", "date_visit", "wth_flag_d7")], all.x=T); d7 <- d7[-which(d7$wth_flag_d7==1),]
+d28 <- merge(d28, d0[, c("child_id", "date_visit", "wth_flag_d28")], all.x=T); d28 <- d28[-which(d28$wth_flag_d28==1),]
+
+```
+
+```{r GENERATE FOLLOW-UP FLAGS}
+
+#flag day7 follow-up records conducted within 30 days from day 0
+d7$d30_flag <- 0
+d7$d30_flag[which(d7$date_call-d7$date_visit<=30)] <- 1
+
+#flag day28 follow-up records conducted within 60 days from day 0
+d28$d60_flag <- 0
+d28$d60_flag[which(d28$date_call-d28$date_visit<=60)] <- 1
+
+#flag follow-up records conducted within 10 days from day 0 (day7+3days window)
+d7$d10_flag <- 0
+d7$d10_flag[which(d7$date_call-d7$date_visit<=10)] <- 1
+
+#flag attempted follow-up (all, excluding death reports outside follow-up)
+d7$att_fu_d7 <- NA; d7$att_fu_d7[which(d7$fu_type!=3 | is.na(d7$fu_type))] <- 1
+d28$att_fu_d28 <- NA; d28$att_fu_d28[which(d28$fu_type!=3 | is.na(d28$fu_type))] <- 1
+
+#save a copy of full fu and keep only the ones recorded within the window
+d7_comp <- d7
+d7 <- d7[which(d7$d30_flag==1),] #remove fu beyond 30 days
+
+d28_comp <- d28
+d28 <- d28[which(d28$d60_flag==1),] #remove fu beyond 60 days
+
+#separate deaths recorded outside scheduled follow-up
+d7_uns <- d7[which(d7$fu_type==3),]
+d28_uns <- d28[which(d28$fu_type==3),]
+
+#keep only successful follow-up 
+d7 <- d7[which(d7$proceed_day7==1),]
+d28 <- d28[which(d28$proceed_day28==1),]
+
+#generate sequence number for each child_id
+d7 <- d7[order(d7$child_id, d7$start),] #sort by id and date (chronological order)
+d7$seq_id_d7 <- ave(d7$child_id, d7$child_id, FUN=seq_along) #sequence based on child_id and date
+
+d28 <- d28[order(d28$child_id, d28$start),] #sort by id and date (chronological order)
+d28$seq_id_d28 <- ave(d28$child_id, d28$child_id, FUN=seq_along) #sequence based on child_id and date
+
+d7_uns <- d7_uns[order(d7_uns$child_id, d7_uns$start),] #sort by id and date (chronological order)
+d7_uns$seq_id_d7 <- ave(d7_uns$child_id, d7_uns$child_id, FUN=seq_along) #sequence based on child_id and date
+
+d28_uns <- d28_uns[order(d28_uns$child_id, d28_uns$start),] #sort by id and date (chronological order)
+d28_uns$seq_id_d28 <- ave(d28_uns$child_id, d28_uns$child_id, FUN=seq_along) #sequence based on child_id and date
+
+
+#flag most recent follow-up/death report
+d7$fu_flag_d7 <- 0
+d7$fu_flag_d7[with(d7, seq_id_d7==ave(seq_id_d7, child_id, FUN=max))] <- 1
+
+d28$fu_flag_d28 <- 0
+d28$fu_flag_d28[with(d28, seq_id_d28==ave(seq_id_d28, child_id, FUN=max))] <- 1
+
+d7_uns$fu_flag_d7 <- 0
+d7_uns$fu_flag_d7[with(d7_uns, seq_id_d7==ave(seq_id_d7, child_id, FUN=max))] <- 1
+
+d28_uns$fu_flag_d28 <- 0
+d28_uns$fu_flag_d28[with(d28_uns, seq_id_d28==ave(seq_id_d28, child_id, FUN=max))] <- 1
+
+```
+
+```{r FLAG DEATHS}
+
+#Check status at day 7/28 in day 7/28 codebooks
+d7_cb_in[which(d7_cb_in$db_name=="status_day7"), c("db_name", "value", "category")]; d28_cb_in[which(d28_cb_in$db_name=="status_day28"), c("db_name", "value", "category")]
+d7_cb_tz[which(d7_cb_tz$db_name=="status_day7"), c("db_name", "value", "category")]; d28_cb_tz[which(d28_cb_tz$db_name=="status_day28"), c("db_name", "value", "category")]
+
+#flag death
+d7$dth_flag_d7 <- 0
+d7$dth_flag_d7[which(d7$status_day7==3 & !is.na(d7$date_death_day7))] <- 1
+d7$dth_flag_d7 <- factor(d7$dth_flag_d7)
+
+d28$dth_flag_d28 <- 0
+d28$dth_flag_d28[which(d28$status_day28==3 & !is.na(d28$date_death_day28))] <- 1
+d28$dth_flag_d28 <- factor(d28$dth_flag_d28)
+
+d7_uns$dth_flag_uns_d7 <- 1
+d28_uns$dth_flag_uns_d28 <- 1
+
+#change death date in unscheduled records for merging later
+d7_uns <- rename(d7_uns, date_death_uns_d7=date_death_day7)
+d28_uns <- rename(d28_uns, date_death_uns_d28=date_death_day28)
+
+```
+
+```{r FLAG HOSPITALISATIONS}
+
+#Check type of facility visited in day 7 codebooks
+d7_cb_in[which(d7_cb_in$db_name=="hf_visit_type"), c("db_name", "value", "category")]; d28_cb_in[which(d28_cb_in$db_name=="hf_visit_type"), c("db_name", "value", "category")]
+d7_cb_tz[which(d7_cb_tz$db_name=="hf_visit_type"), c("db_name", "value", "category")]; d28_cb_tz[which(d28_cb_tz$db_name=="hf_visit_type"), c("db_name", "value", "category")]
+
+#Split into multiple variables
+n.max_d7 <- max(lengths(regmatches(d7$hf_visit_type, gregexpr(";", d7$hf_visit_type))))+1; n.max_d7 #check max number of answers (number of times separator appears, plus one)
+d7 <- separate(d7, hf_visit_type, into = paste("hf_visit_type", seq(1,n.max_d7,1), sep="_"), sep = ";", fill = "right", remove=F)
+
+n.max_d28 <- max(lengths(regmatches(d28$hf_visit_type, gregexpr(";", d28$hf_visit_type))))+1; n.max_d28 #check max number of answers (number of times separator appears, plus one)
+d28 <- separate(d28, hf_visit_type, into = paste("hf_visit_type", seq(1,n.max_d28,1), sep="_"), sep = ";", fill = "right", remove=F)
+
+#flag hospitalization
+d7$hos_flag_d7 <- 0
+d7$hos_flag_d7[which((d7$status_day7==2 | ((d7$hf_visit_type_1%in%c(13,14) | d7$hf_visit_type_2%in%c(13,14) | d7$hf_visit_type_3%in%c(13,14)) & d7$admission==1)) & !is.na(d7$date_hosp_day7) & d7$country=="in")] <- 1
+d7$hos_flag_d7[which((d7$status_day7==2 | ((d7$hf_visit_type_1==1 | d7$hf_visit_type_2==1 | d7$hf_visit_type_3==1) & d7$admission==1)) & !is.na(d7$date_hosp_day7) & d7$country=="tz")] <- 1
+d7$hos_flag_d7 <- factor(d7$hos_flag_d7)
+
+d28$hos_flag_d28 <- 0
+d28$hos_flag_d28[which((d28$status_day28==2 | ((d28$hf_visit_type_1%in%c(13,14) | d28$hf_visit_type_2%in%c(13,14) | d28$hf_visit_type_3%in%c(13,14)) & d28$admission==1)) & !is.na(d28$date_hosp_day28) & d28$country=="in")] <- 1
+d28$hos_flag_d28[which((d28$status_day28==2 | ((d28$hf_visit_type_1==1 | d28$hf_visit_type_2==1 | d28$hf_visit_type_3==1) & d28$admission==1)) & !is.na(d28$date_hosp_day28) & d28$country=="tz")] <- 1
+d28$hos_flag_d28 <- factor(d28$hos_flag_d28)
+
+#flag hospital attendance (not necessarily admitted)
+d7$hos_att_flag_d7 <- 0
+d7$hos_att_flag_d7[which(d7$status_day7==2 | (d7$hf_visit_type_1%in%c(13,14) | d7$hf_visit_type_2%in%c(13,14) | d7$hf_visit_type_3%in%c(13,14))  & d7$country=="in")] <- 1
+d7$hos_att_flag_d7[which(d7$status_day7==2 | (d7$hf_visit_type_1==1 | d7$hf_visit_type_2==1 | d7$hf_visit_type_3==1)  & d7$country=="tz")] <- 1
+d7$hos_att_flag_d7 <- factor(d7$hos_att_flag_d7)
+
+d28$hos_att_flag_d28 <- 0
+d28$hos_att_flag_d28[which(d28$status_day7==2 | (d28$hf_visit_type_1%in%c(13,14) | d28$hf_visit_type_2%in%c(13,14) | d28$hf_visit_type_3%in%c(13,14))  & d28$country=="in")] <- 1
+d28$hos_att_flag_d28[which(d28$status_day7==2 | (d28$hf_visit_type_1==1 | d28$hf_visit_type_2==1 | d28$hf_visit_type_3==1)  & d28$country=="tz")] <- 1
+d28$hos_att_flag_d28 <- factor(d28$hos_att_flag_d28)
+
+```
+
+```{r FLAG FACILITY ATTENDANCE}
+
+#government/public facility (non hospital)
+d7$fac_gov_d7 <- 0
+d7$fac_gov_d7[which(d7$hf_visit_type_1==3 | d7$hf_visit_type_2==3 | d7$hf_visit_type_2==3)] <- 1
+
+d28$fac_gov_d28 <- 0
+d28$fac_gov_d28[which(d28$hf_visit_type_1==3 | d28$hf_visit_type_2==3 | d28$hf_visit_type_2==3)] <- 1
+
+
+#any facility (non hospital)
+d7$fac_any_d7 <- 0
+d7$fac_any_d7[which(d7$hf_visit_type_1%in%c(3,4,5,6) | d7$hf_visit_type_2%in%c(3,4,5,6) | d7$hf_visit_type_3%in%c(3,4,5,6))] <- 1
+
+d28$fac_any_d28 <- 0
+d28$fac_any_d28[which(d28$hf_visit_type_1%in%c(3,4,5,6) | d28$hf_visit_type_2%in%c(3,4,5,6) | d28$hf_visit_type_3%in%c(3,4,5,6))] <- 1
+
+```
+
+```{r LENGHT OF STAY}
+
+#format as numeric
+d7$hospit_duration <- as.numeric(d7$hospit_duration) #days given by caregiver
+d7$max_hospit_duration <- as.numeric(d7$max_hospit_duration) #days calculated from hospitalization date to visit date (if child in hospital at the time of follow-up)
+
+d28$hospit_duration <- as.numeric(d28$hospit_duration) #days given by caregiver
+d28$max_hospit_duration <- as.numeric(d28$max_hospit_duration) #days calculated from hospitalization date to visit date (if child in hospital at the time of follow-up)
+
+#combine the two duration variables for length of stay
+d7$los_d7 <- d7$hospit_duration
+d7$los_d7[which(d7$hos_flag_d7==1 & is.na(d7$hospit_duration))] <- d7$max_hospit_duration[which(d7$hos_flag_d7==1 & is.na(d7$hospit_duration))] #use calculated if duration not answered by caregivers
+
+d28$los_d28 <- d28$hospit_duration
+d28$los_d28[which(d28$hos_flag_d28==1 & is.na(d28$hospit_duration))] <- d28$max_hospit_duration[which(d28$hos_flag_d28==1 & is.na(d28$hospit_duration))] #use calculated if duration not answered by caregivers
+
+```
+
+```{r FLAG CURED}
+
+#Check cure status in day 7 codebooks
+d7_cb_in[which(d7_cb_in$db_name=="cure_day7"), c("db_name", "value", "category")]
+d7_cb_tz[which(d7_cb_tz$db_name=="cure_day7"), c("db_name", "value", "category")]
+
+#check that cure question is not asked if status=3 (dead)
+table(d7$dth_flag_d7, d7$cure_day7, useNA="ifany")
+table(d28$dth_flag_d28, d28$cure_day28, useNA="ifany")
+
+#flag (only evaluated based on day7 follow-up)
+d7$cured_flag_d7 <- 0
+d7$cured_flag_d7[which(d7$cure_day7==1)] <- 1
+
+```
+
+```{r FLAG OXYGEN USE}
+
+#Check oxygen use in hospital records codebooks
+hos_cb_in[which(hos_cb_in$db_name=="o2"), c("db_name", "value", "category")]
+hos_cb_tz[which(hos_cb_tz$db_name=="o2"), c("db_name", "value", "category")]
+
+##keep most recent record if multiple are available for the same child
+hos <- hos[order(hos$child_id, hos$date, decreasing=T),] #sort by id and date (most recent first)
+
+#merge hospital oxygen use info into d0
+d0 <- merge(d0, hos[!duplicated(hos$child_id), c("child_id", "o2")], all.x=T)
+
+```
+
+```{r RENAME VARIABLES DAY7 AND DAY28}
+
+#re-name d7 and d28 variables if names are the same in the two datasets
+for(i in intersect(names(d7), names(d28))){
+  if(!`i`%in%c("child_id", "uuid", "country")) {
+    names(d7)[which(names(d7)==`i`)] <- paste(`i`, "d7", sep="_")
+    names(d28)[which(names(d28)==`i`)] <- paste(`i`, "d28", sep="_")
+  }
+}
+
+```
+
+```{r MERGE DAY0 WITH DAY7 AND DAY28}
+
+##merge day0 with attempted follow-up flags
+d0 <- merge(d0, d7_comp[which(!duplicated(d7_comp$child_id) & d7_comp$att_fu_d7==1), c("child_id", "att_fu_d7")], by="child_id", all.x=T)
+d0 <- merge(d0, d28_comp[which(!duplicated(d28_comp$child_id) & d28_comp$att_fu_d28==1), c("child_id", "att_fu_d28")], by="child_id", all.x=T)
+
+#set to 0 not attempted fu 
+d0$att_fu_d7[which(is.na(d0$att_fu_d7))] <- 0; d0$att_fu_d7 <- factor(d0$att_fu_d7)
+d0$att_fu_d28[which(is.na(d0$att_fu_d28))] <- 0; d0$att_fu_d28 <- factor(d0$att_fu_d28)
+
+##merge day0 with successful most recent follow-up information
+d0 <- merge(d0, d7[which(d7$fu_flag_d7==1), c(names(d7)[!names(d7)%in%intersect(names(d0), names(d7))], "child_id")], by="child_id", all.x=T)
+d0 <- merge(d0, d28[which(d28$fu_flag_d28==1), c(names(d28)[!names(d28)%in%intersect(names(d0), names(d28))], "child_id")], by="child_id", all.x=T)
+
+#set to 0 not successful follow-up
+d0$fu_flag_d7[which(is.na(d0$fu_flag_d7))] <- 0; d0$fu_flag_d7 <- factor(d0$fu_flag_d7)
+d0$fu_flag_d28[which(is.na(d0$fu_flag_d28))] <- 0; d0$fu_flag_d28 <- factor(d0$fu_flag_d28)
+
+##merge day0 with unscheduled death 
+d0 <- merge(d0, d7_uns[, c("child_id", "date_death_uns_d7","dth_flag_uns_d7")], by="child_id", all.x=T)
+d0 <- merge(d0, d28_uns[, c("child_id", "date_death_uns_d28","dth_flag_uns_d28")], by="child_id", all.x=T)
+
+##available follow-up data (from successful follow-up or death records) - this will determine the complete cases population for analysis
+d0$cc <- 0
+d0$cc[which(d0$fu_flag_d7==1 | d0$fu_flag_d28==1 | d0$dth_flag_uns_d7==1 | d0$dth_flag_uns_d28==1)] <- 1
+
+```
+
+```{r FLAG UNATTEMPTED FOLLOW-UP}
+
+#this is the complementary of attempted follow-up flag (but for tables is useful to have this)
+d0$no_att_fu_flag_d7 <- 0
+d0$no_att_fu_flag_d7[which(d0$att_fu_d7==0)] <- 1
+
+d0$no_att_fu_flag_d28 <- 0
+d0$no_att_fu_flag_d28[which(d0$att_fu_d28==0)] <- 1
+
+```
+
+```{r OVERALL DEATH FLAG AND TIME}
+
+#generate an overall death flag for outcomes up to day7 (add a flag to track where the death info comes from - need this later for defining timing of implausible deaths)
+##date and flag from day 7, if recorded
+d0$date_death <- d0$date_death_day7
+d0$dth_flag <- d0$dth_flag_d7
+d0$dth_info <- NA; d0$dth_info[which(d0$dth_flag==1)] <- "d7"
+
+##date and flag from day 28, if fu not done at day 7
+d0$date_death[which(is.na(d0$dth_flag) & d0$dth_flag_d28==1)] <- d0$date_death_day28[which(is.na(d0$dth_flag) & d0$dth_flag_d28==1)]
+d0$dth_info[which(is.na(d0$dth_flag) & d0$dth_flag_d28==1)] <- "d28"
+d0$dth_flag[which(is.na(d0$dth_flag) & d0$dth_flag_d28==1)] <- 1; d0$dth_flag[which(is.na(d0$dth_flag) & d0$dth_flag_d28==0)] <- 0
+
+##date and flag from unscheduled visit if fu not done at day 7 and day 28
+d0$date_death[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d7==1)] <- d0$date_death_uns_d7[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d7==1)]
+d0$dth_info[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d7==1)] <- "uns7"
+d0$dth_flag[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d7==1)] <- 1
+
+d0$date_death[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d28==1)] <- d0$date_death_uns_d28[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d28==1)]
+d0$dth_info[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d28==1)] <- "uns28"
+d0$dth_flag[which(is.na(d0$dth_flag) & d0$dth_flag_uns_d28==1)] <- 1
+ 
+
+#generate an overall death flag for outcomes up to day28 (add a flag to track where the death info comes from - need this later for defining timing of implausible deaths)
+##date and flag from day 7, if recorded
+d0$date_death2 <- d0$date_death_day7
+d0$dth_flag2 <- d0$dth_flag_d7
+d0$dth_info2 <- NA; d0$dth_info2[which(d0$dth_flag2==1)] <- "d7"
+
+##date and flag from day 28, if fu not done at day 7 or death not recorded at day7
+d0$date_death2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_d28==1)] <- d0$date_death_day28[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_d28==1)]
+d0$dth_info2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_d28==1)] <- "d28"
+d0$dth_flag2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_d28==1)] <- 1; d0$dth_flag2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_d28==0)] <- 0
+
+##date and flag from unscheduled visit if fu not done at day 7 and day 28 or no outcome was reported
+d0$date_death2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d7==1)] <- d0$date_death_uns_d7[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d7==1)]
+d0$dth_info2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d7==1)] <- "uns7"
+d0$dth_flag2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d7==1)] <- 1
+
+d0$date_death2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d28==1)] <- d0$date_death_uns_d28[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d28==1)]
+d0$dth_info2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d28==1)] <- "uns28"
+d0$dth_flag2[which((is.na(d0$dth_flag2) | d0$dth_flag2==0) & d0$dth_flag_uns_d28==1)] <- 1
+
+
+#death time point flag
+##up to day7
+d0$dth_time_flag <- 0 #alive
+d0$dth_time_flag[which(d0$dth_flag==1 & (d0$date_death-d0$date_visit==0 | d0$date_death-d0$date_visit==1))] <- 1 #within 24 hours (defined as until the end of the day after enrollment)
+d0$dth_time_flag[which(d0$dth_flag==1 & d0$date_death-d0$date_visit>0 & d0$date_death-d0$date_visit<=7 & d0$date_death-d0$date_visit!=1)] <- 2 #within 7 days (but after 24 hours)
+d0$dth_time_flag[which(d0$dth_flag==1 & d0$date_death-d0$date_visit<0 & (d0$dth_info=="d7" | d0$dth_info=="uns7"))] <- 2 #if implausible date from day7 fu, assume within 7 days
+d0$dth_time_flag[which(d0$dth_flag==1 & d0$date_death-d0$date_visit<0 & (d0$dth_info=="d28" | d0$dth_info=="uns28"))] <- 3 #if implausible date from day7 fu, assume after 7 days but within 28 days
+d0$dth_time_flag[which(d0$dth_flag==1 & d0$date_death-d0$date_visit>7)] <- 3 
+d0$dth_time_flag <- set_labels(factor(d0$dth_time_flag), labels=c("Alive", "Died within 24 hrs", "Died within 7 days", "Died after 7 days"))
+
+##up to day28
+d0$dth_time_flag2 <- 0 #alive
+d0$dth_time_flag2[which(d0$dth_flag2==1 & (d0$date_death2-d0$date_visit==0 | d0$date_death2-d0$date_visit==1))] <- 1 #within 24 hours (defined as until the end of the day after enrollment)
+d0$dth_time_flag2[which(d0$dth_flag2==1 & d0$date_death2-d0$date_visit>0 & d0$date_death2-d0$date_visit<=7 & d0$date_death2-d0$date_visit!=1)] <- 2 #within 7 days (but after 24 hours)
+d0$dth_time_flag2[which(d0$dth_flag2==1 & d0$date_death2-d0$date_visit<0 & (d0$dth_info2=="d7" | d0$dth_info2=="uns7"))] <- 2 #if implausible date from day7 fu, assume within 7 days
+d0$dth_time_flag2[which(d0$dth_flag2==1 & d0$date_death2-d0$date_visit>7 & d0$date_death2-d0$date_visit<=28)] <- 3 #within 28 days (but after 7 days)
+d0$dth_time_flag2[which(d0$dth_flag2==1 & d0$date_death2-d0$date_visit<0 & (d0$dth_info2=="d28" | d0$dth_info2=="uns28"))] <- 3 #if implausible date from day7 fu, assume after 7 days but within 28 days
+d0$dth_time_flag2[which(d0$dth_flag2==1 & d0$date_death2-d0$date_visit>28)] <- 4 
+d0$dth_time_flag2 <- set_labels(factor(d0$dth_time_flag2), labels=c("Alive", "Died within 24 hrs", "Died within 7 days", "Died between 7 and 28 days", "Died after 28 days"))
+
+```
+
+```{r OVERALL HOSPITALISATION FLAG AND TIME}
+
+#generate an overall hospitalisation flag for outcomes up to day7 (add a flag to track where the hospital info comes from - need this later for defining timing of implausible hospitalisations)
+##date and flag from day 7, if recorded
+d0$date_hos <- d0$date_hosp_day7
+d0$hos_flag <- d0$hos_flag_d7
+d0$hos_info <- NA; d0$hos_info[which(d0$hos_flag==1)] <- "d7"
+##date and flag from day 28, if fu not done at day 7
+d0$date_hos[which(is.na(d0$hos_flag) & d0$hos_flag_d28==1)] <- d0$date_hosp_day28[which(is.na(d0$hos_flag) & d0$hos_flag_d28==1)]
+d0$hos_info[which(is.na(d0$hos_flag) & d0$hos_flag_d28==1)] <- "d28"
+d0$hos_flag[which(is.na(d0$hos_flag) & d0$hos_flag_d28==1)] <- 1; d0$hos_flag[which(is.na(d0$hos_flag) & d0$hos_flag_d28==0)] <- 0
+
+#generate an overall hospitalisation flag for outcomes up to day28 (add a flag to track where the hospital info comes from - need this later for defining timing of implausible hospitalisations)
+##date and flag from day 7, if recorded
+d0$date_hos2 <- d0$date_hosp_day7
+d0$hos_flag2 <- d0$hos_flag_d7
+d0$hos_info2 <- NA; d0$hos_info2[which(d0$hos_flag2==1)] <- "d7"
+##date and flag from day 28, if fu not done at day 7 or outcome not recorded
+d0$date_hos2[which((is.na(d0$hos_flag2) | d0$hos_flag2==0) & d0$hos_flag_d28==1)] <- d0$date_hosp_day28[which((is.na(d0$hos_flag2) | d0$hos_flag2==0) & d0$hos_flag_d28==1)]
+d0$hos_info2[which((is.na(d0$hos_flag2) | d0$hos_flag2==0) & d0$hos_flag_d28==1)] <- "d28"
+d0$hos_flag2[which((is.na(d0$hos_flag2) | d0$hos_flag2==0) & d0$hos_flag_d28==1)] <- 1; d0$hos_flag[which((is.na(d0$hos_flag2) | d0$hos_flag2==0) & d0$hos_flag_d28==0)] <- 0
+
+#hospitalisation time point flag
+##up to day7
+d0$hos_time_flag <- 0 #not hospitalised
+d0$hos_time_flag[which(d0$hos_flag==1 & (d0$date_hos-d0$date_visit==0 | d0$date_hos-d0$date_visit==1))] <- 1 #within 24 hours (defined as until the end of the day after enrollment)
+d0$hos_time_flag[which(d0$hos_flag==1 & d0$date_hos-d0$date_visit>0 & d0$date_hos-d0$date_visit<=7 & d0$date_hos-d0$date_visit!=1)] <- 2 #within 7 days (defined as until the end of the day after enrollment)
+d0$hos_time_flag[which(d0$hos_flag==1 & d0$date_hos-d0$date_visit<0 & d0$hos_info=="d7")] <- 2 #if implausible date from day7 fu, assume within 7 days
+d0$hos_time_flag[which(d0$hos_flag==1 & d0$date_hos-d0$date_visit<0 & d0$hos_info=="d28")] <- 3 #if implausible date from day7 fu, assume after 7 days but within 28 days
+d0$hos_time_flag[which(d0$hos_flag==1 & d0$date_hos-d0$date_visit>7)] <- 3 
+d0$hos_time_flag <- set_labels(factor(d0$hos_time_flag), labels=c("Not hospitalised", "Hospitalised within 24 hrs", "Hospitalised within 7 days", "Hospitalised after 7 days"))
+
+##up to day28
+d0$hos_time_flag2 <- 0 #not hospitalised
+d0$hos_time_flag2[which(d0$hos_flag2==1 & (d0$date_hos2-d0$date_visit==0 | d0$date_hos2-d0$date_visit==1))] <- 1 #within 24 hours (defined as until the end of the day after enrollment)
+d0$hos_time_flag2[which(d0$hos_flag2==1 & d0$date_hos2-d0$date_visit>0 & d0$date_hos2-d0$date_visit<=7 & d0$date_hos2-d0$date_visit!=1)] <- 2 #within 7 days (defined as until the end of the day after enrollment)
+d0$hos_time_flag2[which(d0$hos_flag2==1 & d0$date_hos2-d0$date_visit<0 & d0$hos_info2=="d7")] <- 2 #if implausible date from day7 fu, assume within 7 days
+d0$hos_time_flag2[which(d0$hos_flag2==1 & d0$date_hos2-d0$date_visit>7 & d0$date_hos2-d0$date_visit<=28)] <- 3 #within 28 days
+d0$hos_time_flag2[which(d0$hos_flag2==1 & d0$date_hos2-d0$date_visit<0 & d0$hos_info2=="d28")] <- 3 #if implausible date from day7 fu, assume after 7 days but within 28 days
+d0$hos_time_flag2[which(d0$hos_flag2==1 & d0$date_hos2-d0$date_visit>28)] <- 4 
+d0$hos_time_flag2 <- set_labels(factor(d0$hos_time_flag2), labels=c("Not hospitalised", "Hospitalised within 24 hrs", "Hospitalised within 7 days", "Hospitalised between 7 and 28 days", "Hospitalised after 28 days"))
+
+```
+
+```{r COMBINED LOS}
+
+#create overall length of stay based on all hospitalisations 
+d0$los <- NA
+d0$los[which(d0$hos_flag2==1 & d0$hos_info2=="d7")] <- d0$los_d7[which(d0$hos_flag2==1 & d0$hos_info2=="d7")]
+d0$los[which(d0$hos_flag2==1 & d0$hos_info2=="d28")] <- d0$los_d28[which(d0$hos_flag2==1 & d0$hos_info2=="d28")]
+
+```
+
+```{r SECOND HOSPITALISATIONS}
+
+#flag cases where hospitalisation was reported in both follow-up forms
+d0$hos_both_flag <- 0
+d0$hos_both_flag[which(d0$fu_flag_d7==1 & d0$hos_flag_d7==1 & d0$fu_flag_d28==1 & d0$hos_flag_d28==1)] <- 1
+
+#derive discharge date from day7 length of stay
+d0$date_disch_der_d7 <- d0$date_hosp_day7+d0$los_d7
+
+#flag hospitalisations from day28 that occurred after derived discharge date from day7 hospitalisation
+d0$second_hosp_flag <- 0
+d0$second_hosp_flag[which(d0$hos_both_flag==1 & d0$date_disch_der_d7<d0$date_hosp_day28)] <- 1
+
+
+```
+
+```{r FLAG CHILDREN PRESENTING AGAIN TO THE FACILITY FOR SCHEDULED AND UNSCHEDULED VISITS}
+
+##create another variable with child_id (used later for merging) and remove missing IDs as not usable for merging
+d0_rep$child_id <- d0_rep$prev_id; d0_rep <- d0_rep[which(!is.na(d0_rep$prev_id)),]
+
+##flag earliest presentation to the facility
+#generate sequence number for each child_id
+d0_rep <- d0_rep[order(d0_rep$child_id, d0_rep$date_visit),] #sort by id and date (chronological order)
+d0_rep$seq_id <- ave(d0_rep$child_id, d0_rep$child_id, FUN=seq_along) #sequence based on child_id and date
+
+#flag
+d0_rep$sc_unsc_flag <- 0
+d0_rep$sc_unsc_flag[with(d0_rep, seq_id==ave(seq_id, child_id, FUN=min))] <- 1
+
+##merge relevant informations with d0
+#rename facility id and visit date to differentiate after merging
+d0_rep <- rename(d0_rep, date_visit_rep=date_visit, fid_rep=fid)
+
+#merge
+d0 <- merge(d0, d0_rep[which(d0_rep$sc_unsc_flag==1), c("child_id", "date_visit_rep", "fid_rep", "sc_unsc_flag")], all.x=T)
+
+#flag repeated visits within 7 days from day 0
+d0$d10_flag_rep <- NA
+d0$d10_flag_rep[which(d0$sc_unsc_flag==1 & d0$date_visit_rep-d0$date_visit>7)] <- 0
+d0$d10_flag_rep[which(d0$sc_unsc_flag==1 & d0$date_visit_rep-d0$date_visit<=7)] <- 1
+
+#flag repeated visits at same facility of day0
+d0$fid_same <- NA
+d0$fid_same[which(d0$sc_unsc_flag==1 & d0$fid!=d0$fid_rep)] <- 0
+d0$fid_same[which(d0$sc_unsc_flag==1 & d0$fid==d0$fid_rep)] <- 1
+
+
+```
+
+
+```{r FLAG URGENT REFERRALS}
+
+###Flag urgent referrals from registry (urgent, or admitted to inpatient department of the facility - ONLY FOR HEALTH CENTERS AND CHCs)
+#check codebooks 
+d0_cb_in[which(d0_cb_in$db_name=="urg_referral_hf"), c("db_name", "label", "value", "category")]
+d0_cb_in[which(d0_cb_in$db_name=="referral_hf"), c("db_name", "label", "value", "category")]
+
+d0_cb_tz[which(d0_cb_tz$db_name=="urg_referral_hf"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="referral_hf"), c("db_name", "label", "value", "category")]
+
+
+##split multiple referral answers into multiple variables to avoid mis-classification between one digit and two digits numbers (e.g. 8, 98)
+rmax <- max(lengths(regmatches(d0$urg_referral_hf, gregexpr(";", d0$urg_referral_hf))))+1; rmax #max n
+d0 <- separate(d0, urg_referral_hf, into = paste("urg_referral_hf", seq(1,rmax,1), sep="_"), sep = ";", fill = "right", remove=F)
+
+d0$hf_urg_ref <- NA #initialize
+d0$hf_urg_ref[which(d0$referral_hf==0)] <- 0 #not referred
+d0$hf_urg_ref[which(d0$referral_hf==1 & d0$country=="in" & ((d0$urg_referral_hf_1==1 | d0$urg_referral_hf_2==1 | d0$urg_referral_hf_3==1 | d0$urg_referral_hf_4==1) | ((d0$urg_referral_hf_1==4 | d0$urg_referral_hf_2==4 | d0$urg_referral_hf_3==4 | d0$urg_referral_hf_4==4) & d0$type=="CHC") ))] <- 1 #referred, urgent (India)
+d0$hf_urg_ref[which(d0$referral_hf==1 & d0$country=="tz" & ((d0$urg_referral_hf_1==4 | d0$urg_referral_hf_2==4 | d0$urg_referral_hf_3==4 | d0$urg_referral_hf_4==4) | ((d0$urg_referral_hf_1==8 | d0$urg_referral_hf_2==8 | d0$urg_referral_hf_3==8 | d0$urg_referral_hf_4==8) & d0$type=="health center") ))] <- 1 #referred, urgent (Tanzania)
+d0$hf_urg_ref[which(d0$referral_hf==1 & is.na(d0$hf_urg_ref) & ( ((d0$urg_referral_hf_1==3 | d0$urg_referral_hf_2==3 | d0$urg_referral_hf_3==3 | d0$urg_referral_hf_4==3) & d0$country=="in") | ((d0$urg_referral_hf_1==98 | d0$urg_referral_hf_2==98 | d0$urg_referral_hf_3==98 | d0$urg_referral_hf_4==98) & d0$country=="tz") ) )] <- 2 #referred, urgency not known
+
+d0$hf_urg_ref[which(d0$referral_hf==1 & is.na(d0$hf_urg_ref))] <- 3 #other
+
+d0$hf_urg_ref <- set_labels(factor(d0$hf_urg_ref), labels=c("Not referred", "Referred, urgent", "Referred, urgency not known", "Other"))
+
+
+###Flag urgent referrals from caregivers (urgency from caregivers only collected in Tanzania)
+d0_cb_tz[which(d0_cb_tz$db_name=="urg_referral_cg"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="referral_cg"), c("db_name", "label", "value", "category")]
+d0_cb_in[which(d0_cb_in$db_name=="referral_cg"), c("db_name", "label", "value", "category")]
+
+##split multiple referral answers into multiple variables to avoid mis-classification between one digit and two digits numbers (e.g. 8, 98)
+rmax2 <- max(lengths(regmatches(d0$urg_referral_cg, gregexpr(";", d0$urg_referral_cg))))+1; rmax2 #max n
+d0 <- separate(d0, urg_referral_cg, into = paste("urg_referral_cg", seq(1,rmax2,1), sep="_"), sep = ";", fill = "right", remove=F)
+
+d0$cg_urg_ref <- NA #initialize
+d0$cg_urg_ref[which(d0$country=="tz" & d0$referral_cg==0)] <- 0 #not referred
+d0$cg_urg_ref[which(d0$country=="tz" & !d0$referral_cg%in%c(0,1))] <- 98 #referred unknown
+d0$cg_urg_ref[which(d0$country=="tz" & d0$referral_cg==1 & ((d0$urg_referral_cg_1==4 | d0$urg_referral_cg_2==4 | d0$urg_referral_cg_3==4 | d0$urg_referral_cg_4==4) | ((d0$urg_referral_cg_1==8 | d0$urg_referral_cg_2==8 | d0$urg_referral_cg_3==8 | d0$urg_referral_cg_4==8) & d0$type=="health center") ) )] <- 1 #referred, urgent 
+d0$cg_urg_ref[which(d0$country=="tz" & d0$referral_cg==1 & is.na(d0$cg_urg_ref) & (d0$urg_referral_cg_1==98 | d0$urg_referral_cg_2==98 | d0$urg_referral_cg_3==98 | d0$urg_referral_cg_4==98))] <- 2 #referred, urgency not known
+d0$cg_urg_ref[which(d0$country=="tz" & d0$referral_cg==1 & is.na(d0$cg_urg_ref))] <- 3 #referred, other
+d0$cg_urg_ref <- set_labels(factor(d0$cg_urg_ref), labels=c("Not referred", "Referred, urgent", "Referred, urgency not known", "Referred, Other", "Referral, unknown"))
+
+###Urgent referral for primary analysis
+d0$urg_ref <- 0
+d0$urg_ref[which((d0$hf_urg_ref==1 | d0$cg_urg_ref==1 | (d0$hf_urg_ref==2 & d0$cg_urg_ref==2)))] <- 1 #if urgency not known in both, assume urgent
+d0$urg_ref <- as.factor(d0$urg_ref)
+
+###Urgent referral for sensitivity analysis
+#urgent from both cg and registry
+d0$urg_ref_sa1 <- 0
+d0$urg_ref_sa1[which(d0$hf_urg_ref==1 & d0$cg_urg_ref==1)] <- 1 
+d0$urg_ref_sa1 <- as.factor(d0$urg_ref_sa1)
+
+#urgent only from registry
+d0$urg_ref_sa2 <- 0
+d0$urg_ref_sa2[which(d0$hf_urg_ref%in%c(1,2))] <- 1 #if urgency not know, assume urgent
+d0$urg_ref_sa2 <- as.factor(d0$urg_ref_sa2)
+
+
+```
+
+```{r DEFINE HYPOXAEMIA CATEGORIES}
+
+#country specific cut-offs (both have the same)
+d0$hypox_country <- NA
+d0$hypox_country[which(d0$spo2_meas1>=40 & d0$spo2_meas1<90)] <- 3 #severe
+d0$hypox_country[which(d0$spo2_meas1>=90 & d0$spo2_meas1<92)] <- 2 #moderate
+d0$hypox_country[which(d0$spo2_meas1>=92 & d0$spo2_meas1<94)] <- 1 #mild
+d0$hypox_country[which(is.na(d0$spo2_meas1) | d0$spo2_meas1<40 | d0$spo2_meas1>=94)] <- 0 #normoxaemic or spurious (=not available=assume normoxaemic)
+
+d0$hypox_country <- set_labels(factor(d0$hypox_country, levels=c(3,2,1,0)), labels=c("Severe hypoxaemia", "Moderate hypoxaemia", "Mild hypoxaemia", "Normoxaemic"))
+
+
+#cut-offs for detailed descriptive summaries
+d0$hypox_sum <- NA
+d0$hypox_sum[which(d0$spo2_meas1<40 & !is.na(d0$spo2_meas1))] <- 98 
+d0$hypox_sum[which(d0$spo2_meas1>=40 & d0$spo2_meas1<70)] <- 5
+d0$hypox_sum[which(d0$spo2_meas1>=70 & d0$spo2_meas1<90)] <- 4
+d0$hypox_sum[which(d0$spo2_meas1>=90 & d0$spo2_meas1<92)] <- 3
+d0$hypox_sum[which(d0$spo2_meas1>=92 & d0$spo2_meas1<94)] <- 2 
+d0$hypox_sum[which(d0$spo2_meas1>=94 & d0$spo2_meas1<95)] <- 1
+d0$hypox_sum[which(d0$spo2_meas1>=95)] <- 0 
+d0$hypox_sum[which(is.na(d0$spo2_meas1))] <- 99
+
+d0$hypox_sum <- set_labels(factor(d0$hypox_sum, levels=c(98,5,4,3,2,1,0,99)), labels=c("< 40% (spurious)", 
+                    "40% to < 70%",
+                    "70% to < 90%",
+                    "90% to < 92%",
+                    "92% to < 94%",
+                    "94% to < 95%",
+                    "95% to 100%", 
+		                "Unknown"))
+
+#group categories for hypox outcome (severe, moderate, mild) according to standard cut-off
+d0$hypox_cat <- NA
+d0$hypox_cat[which(d0$hypox_sum%in%c(4,5))] <- 3 #severe
+d0$hypox_cat[which(d0$hypox_sum==3)] <- 2 #moderate
+d0$hypox_cat[which(d0$hypox_sum==2)] <- 1 #mild
+
+d0$hypox_cat <- set_labels(factor(d0$hypox_cat, levels=c(3,2,1)), labels=c("< 90%", "90% to < 92%", "92% to < 94%"))
+
+#group categories for hypox outcome (severe, moderate, mild) according to standard cut-off, spurious, unknown
+d0$hypox_cat1 <- NA
+d0$hypox_cat1[which(d0$hypox_sum==98)] <- 98 #spurious
+d0$hypox_cat1[which(d0$hypox_sum%in%c(4,5))] <- 3 #severe
+d0$hypox_cat1[which(d0$hypox_sum==3)] <- 2 #moderate
+d0$hypox_cat1[which(d0$hypox_sum==2)] <- 1 #mild
+d0$hypox_cat1[which(d0$hypox_sum==99)] <- 99 #unknown
+
+d0$hypox_cat1 <- set_labels(factor(d0$hypox_cat1, levels=c(98,3,2,1,99)), labels=c("< 40% (spurious)", "< 90%", "90% to < 92%", "92% to < 94%", "Unknown"))
+
+
+```
+
+```{r FORMAT MEASUREMENTS}
+
+d0$muac_meas <- as.numeric(d0$muac_meas)
+d0$temp_meas <- as.numeric(d0$temp_meas)
+d0$temp_meas_farenheit <- as.numeric(d0$temp_meas_farenheit)
+d0$rr_meas <- as.numeric(d0$rr_meas)
+d0$wt_meas <- as.numeric(d0$wt_meas)
+
+```
+
+```{r REPORTED FEVER}
+
+#check codebooks for diagnosis
+d0_cb_in[which(d0_cb_in$db_name=="dx_mlist"), c("db_name", "value", "category")] #in India this variable was not collected
+d0_cb_tz[which(d0_cb_tz$db_name=="dx_mlist"), c("db_name", "value", "category")]
+
+#flag fever
+d0$fev_flag <- 0
+d0$fev_flag[which(d0$sx_fever==1 | d0$temp_meas>=37.5 | d0$temp_meas_farenheit >=99.5 | grepl("11",d0$dx_mlist)==T)] <- 1
+d0$fev_flag <- as.factor(d0$fev_flag)
+
+```
+
+```{r MALARIA TESTING}
+
+#check codebooks for tests ordered
+d0_cb_in[which(d0_cb_in$db_name=="tests"), c("db_name", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="tests"), c("db_name", "value", "category")]
+
+#check codebooks for malaria test result
+d0_cb_in[which(d0_cb_in$db_name=="malaria_res"), c("db_name", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="malaria_res"), c("db_name", "value", "category")]
+
+#flag
+d0$mal_flag <- 0
+d0$mal_flag[which(grepl("1", d0$tests)==T & d0$malaria_res%in%c(0,1,2,95))] <- 1
+d0$mal_flag <- as.factor(d0$mal_flag)
+
+```
+
+```{r FLAG SECONDARY HOSPITALIZATION}
+
+#hospitalisation without referral
+d0$hosp_noref <- 0
+d0$hosp_noref[which(d0$hos_flag==1 & d0$urg_ref==0 & d0$hos_time_flag%in%c(1,2,3))] <- 1
+d0$hosp_noref <- as.factor(d0$hosp_noref)
+
+d0$hosp_noref2 <- 0
+d0$hosp_noref2[which(d0$hos_flag2==1 & d0$urg_ref==0 & d0$hos_time_flag2%in%c(1,2,3,4))] <- 1
+d0$hosp_noref2 <- as.factor(d0$hosp_noref2)
+
+#delayed hospitalisation with referral
+d0$hosp_refdel <- 0
+d0$hosp_refdel[which(d0$hos_flag==1 & d0$urg_ref==1 & d0$hos_time_flag%in%c(2,3))] <- 1
+d0$hosp_refdel <- as.factor(d0$hosp_refdel)
+
+d0$hosp_refdel2 <- 0
+d0$hosp_refdel2[which(d0$hos_flag2==1 & d0$urg_ref==1 & d0$hos_time_flag2%in%c(2,3,4))] <- 1
+d0$hosp_refdel2 <- as.factor(d0$hosp_refdel2)
+
+
+
+#Primary hospitalisation refers to hospiatlisation occurring within 24hrs after Day 0 consultation and as a result of referral
+#Secondary hospitalisation refers to any delayed hospitalisation (occurring at any point greater than 24hrs after the Day 0 consultation) and any hospitalisation occurring without a referral
+##within 7 days
+d0$pr_se_hos <- 0 #assume not hospitalized children for whom no follow-up was conducted
+d0$pr_se_hos[which(d0$hos_flag==1 & d0$hos_time_flag==1 & d0$urg_ref==1)] <- 1
+d0$pr_se_hos[which(d0$hosp_noref==1 | d0$hosp_refdel==1)] <- 2
+d0$pr_se_hos <- set_labels(factor(d0$pr_se_hos), labels=c("Not hospitalised", "Primary hospitalisation", "Secondary hospitalisation"))
+
+##within 28 days
+d0$pr_se_hos2 <- 0 #assume not hospitalized children for whom no follow-up was conducted
+d0$pr_se_hos2[which(d0$hos_flag2==1 & d0$hos_time_flag2==1 & d0$urg_ref==1)] <- 1
+d0$pr_se_hos2[which(d0$hosp_noref2==1 | d0$hosp_refdel2==1)] <- 2
+d0$pr_se_hos2 <- set_labels(factor(d0$pr_se_hos2), labels=c("Not hospitalised", "Primary hospitalisation", "Secondary hospitalisation"))
+
+
+##Different cut-off for sensitivity analysis
+#same day
+d0$pr_se_hos_sa1 <- 0 #assume not hospitalized children for whom no follow-up was conducted
+d0$pr_se_hos_sa1[which(d0$hos_flag==1 & d0$urg_ref==1 & d0$date_hos-d0$date_visit==0)] <- 1
+d0$pr_se_hos_sa1[which(d0$hos_flag==1 & (d0$date_hos-d0$date_visit!=0 | (d0$date_hos-d0$date_visit==0 & d0$urg_ref==0)))] <- 2
+
+d0$pr_se_hos_sa1 <- set_labels(factor(d0$pr_se_hos_sa1), labels=c("Not hospitalised", "Primary hospitalisation", "Secondary hospitalisation"))
+
+#3 days
+d0$pr_se_hos_sa2 <- 0 #assume not hospitalized children for whom no follow-up was conducted
+d0$pr_se_hos_sa2[which(d0$hos_flag==1 & d0$urg_ref==1 & ((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=3) | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d7")) )] <- 1
+d0$pr_se_hos_sa2[which(d0$hos_flag==1 & (d0$date_hos-d0$date_visit>3 | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d28") | (((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=3) | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d7")) & d0$urg_ref==0)))] <- 2
+
+d0$pr_se_hos_sa2 <- set_labels(factor(d0$pr_se_hos_sa2), labels=c("Not hospitalised", "Primary hospitalisation", "Secondary hospitalisation"))
+
+#7 days
+d0$pr_se_hos_sa3 <- 0 #assume not hospitalized children for whom no follow-up was conducted
+d0$pr_se_hos_sa3[which(d0$hos_flag==1 & d0$urg_ref==1 & ((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=7) | (d0$date_hos-d0$date_visit<7 & d0$hos_info=="d7")) )] <- 1
+d0$pr_se_hos_sa3[which(d0$hos_flag==1 & (d0$date_hos-d0$date_visit>7 | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d28") | (((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=7) | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d7")) & d0$urg_ref==0)))] <- 2
+
+d0$pr_se_hos_sa3 <- set_labels(factor(d0$pr_se_hos_sa3), labels=c("Not hospitalised", "Primary hospitalisation", "Secondary hospitalisation"))
+
+
+##Different referral definition for sensistivity analysis
+#agreement caregiver and registry
+d0$pr_se_hos_sa_ref1 <- 0 #assume not hospitalized children for whom no follow-up was conducted
+d0$pr_se_hos_sa_ref1[which(d0$hos_flag==1 & d0$urg_ref_sa1==1 & ((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=7) | (d0$date_hos-d0$date_visit<7 & d0$hos_info=="d7")) )] <- 1
+d0$pr_se_hos_sa_ref1[which(d0$hos_flag==1 & (d0$date_hos-d0$date_visit>7 | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d28") | (((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=7) | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d7")) & d0$urg_ref_sa1==0)))] <- 2
+
+d0$pr_se_hos_sa_ref1 <- set_labels(factor(d0$pr_se_hos_sa_ref1), labels=c("Not hospitalised", "Primary hospitalisation", "Secondary hospitalisation"))
+
+#only registry
+d0$pr_se_hos_sa_ref2 <- 0 #assume not hospitalized children for whom no follow-up was conducted
+d0$pr_se_hos_sa_ref2[which(d0$hos_flag==1 & d0$urg_ref_sa2==1 & ((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=7) | (d0$date_hos-d0$date_visit<7 & d0$hos_info=="d7")) )] <- 1
+d0$pr_se_hos_sa_ref2[which(d0$hos_flag==1 & (d0$date_hos-d0$date_visit>7 | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d28") | (((d0$date_hos-d0$date_visit>=0 & d0$date_hos-d0$date_visit<=7) | (d0$date_hos-d0$date_visit<0 & d0$hos_info=="d7")) & d0$urg_ref_sa2==0)))] <- 2
+
+d0$pr_se_hos_sa_ref2 <- set_labels(factor(d0$pr_se_hos_sa_ref2), labels=c("Not hospitalised", "Primary hospitalisation", "Secondary hospitalisation"))
+
+
+```
+
+```{r FLAG SEVERE COMPLICATION}
+
+#within 7 days
+d0$sev_comp <- 0 #assume no death or hospitalisation for children not reached at follow-up or withdrawn
+d0$sev_comp[which(d0$dth_flag==1 | d0$pr_se_hos==2)] <- 1
+d0$sev_comp <- factor(d0$sev_comp)
+
+#within 28 days
+d0$sev_comp2 <- 0 #assume no death or hospitalisation for children not reached at follow-up or withdrawn
+d0$sev_comp2[which(d0$dth_flag2==1 | d0$pr_se_hos2==2)] <- 1
+d0$sev_comp2 <- factor(d0$sev_comp2)
+
+
+##Severe complication by Day 7
+d0$sev_comp_d7 <- 0 
+d0$sev_comp_d7[which(d0$dth_time_flag%in%c(1,2) | (d0$pr_se_hos==2 & d0$hos_time_flag%in%c(1,2)))] <- 1
+
+##Severe complication by Day 7 - sensitivity analysis
+##same day
+d0$sev_comp_d7_sa1 <- 0 
+d0$sev_comp_d7_sa1[which(d0$dth_time_flag%in%c(1,2) | (d0$pr_se_hos_sa1==2 & d0$hos_time_flag%in%c(1,2)))] <- 1
+
+##Severe complication by Day 7 - sensitivity analysis
+##3 days 
+d0$sev_comp_d7_sa2 <- 0 
+d0$sev_comp_d7_sa2[which(d0$dth_time_flag%in%c(1,2) | (d0$pr_se_hos_sa2==2 & d0$hos_time_flag%in%c(1,2)))] <- 1
+
+
+##Severe complication by Day 7 - sensitivity analysis
+##7 days
+d0$sev_comp_d7_sa3 <- 0 
+d0$sev_comp_d7_sa3[which(d0$dth_time_flag%in%c(1,2) | (d0$pr_se_hos_sa3==2 & d0$hos_time_flag%in%c(1,2)))] <- 1
+
+##Severe complication by Day 7 - sensitivity analysis
+##urgent referral recorded both in the registry and from the caregiver
+d0$sev_comp_d7_sa_ref1 <- 0 
+d0$sev_comp_d7_sa_ref1[which(d0$dth_time_flag%in%c(1,2) | (d0$pr_se_hos_sa_ref1==2 & d0$hos_time_flag%in%c(1,2)))] <- 1
+
+##Severe complication by Day 7 - sensitivity analysis
+##urgent referral recorded only from the registry 
+d0$sev_comp_d7_sa_ref2 <- 0 
+d0$sev_comp_d7_sa_ref2[which(d0$dth_time_flag%in%c(1,2) | (d0$pr_se_hos_sa_ref2==2 & d0$hos_time_flag%in%c(1,2)))] <- 1
+
+
+##Proportion of severe complication by Day 28
+d0$sev_comp_d28 <- 0 
+d0$sev_comp_d28[which(d0$sev_comp2==1 & (d0$dth_time_flag2%in%c(1,2,3) | d0$hos_time_flag2%in%c(1,2,3)))] <- 1
+
+
+```
+
+```{r PRIMARY HOSPITALISATION VARIABLES}
+
+##primary hospitalisations
+d0$pr_hos <- 0
+d0$pr_hos[which(d0$pr_se_hos==1)] <- 1
+
+##primary hospitalisations - sensitivity analysis
+##same day
+d0$pr_hos_sa1 <- 0
+d0$pr_hos_sa1[which(d0$pr_se_hos_sa1==1)] <- 1
+
+##primary hospitalisations - sensitivity analysis
+##3 days
+d0$pr_hos_sa2 <- 0
+d0$pr_hos_sa2[which(d0$pr_se_hos_sa2==1)] <- 1
+
+
+##primary hospitalisations - sensitivity analysis
+##7 days
+d0$pr_hos_sa3 <- 0
+d0$pr_hos_sa3[which(d0$pr_se_hos_sa3==1)] <- 1
+
+##primary hospitalisations - sensitivity analysis
+##urgent referral recorded both in the registry and from the caregiver
+d0$pr_hos_sa_ref1 <- 0
+d0$pr_hos_sa_ref1[which(d0$pr_se_hos_sa_ref1==1)] <- 1
+
+##primary hospitalisations - sensitivity analysis
+##urgent referral recorded only from the registry 
+d0$pr_hos_sa_ref2 <- 0
+d0$pr_hos_sa_ref2[which(d0$pr_se_hos_sa_ref2==1)] <- 1
+
+
+```
+
+```{r COMPLETED REFERRAL VARIABLES}
+
+#children who received referral advise on day 0 and attended hospital within 7 days (admitted or not)
+d0$comp_ref_d7 <- 0
+d0$comp_ref_d7[which(d0$hos_att_flag_d7==1 & d0$d10_flag==1 & d0$urg_ref==1)] <- 1
+
+
+```
+
+```{r CURED AT DAY 7 VARIABLE}
+
+d0$cured_d7 <- 0 #children lost to follow-up will be assumed cured
+d0$cured_d7[which((d0$cured_flag_d7==1 & d0$d10_flag==1) | is.na(d0$cured_flag_d7))] <- 1
+d0$cured_d7[which(d0$d10_flag==0)] <- 1
+
+```
+
+```{r FU VARIABLES}
+
+## flag scheduled follow-up by day7 (from caregiver)
+d0$sc_fu_d7 <- 0
+d0$sc_fu_d7[which((d0$fu_advice==1 | d0$fu_advice_hf==1) & d0$fac_gov_d7==1 & d0$fu_flag_d7==1 & d0$d10_flag==1)] <- 1
+
+## flag scheduled follow-up by day7 (from scheduled/unscheduled visit)
+d0$sc_fu_vis <- 0
+d0$sc_fu_vis[which((d0$fu_advice==1 | d0$fu_advice_hf==1) & d0$sc_unsc_flag==1 & d0$d10_flag_rep==1 & d0$fid_same==1)] <- 1
+
+## flag unscheduled follow-up (from caregiver)
+d0$unsc_fu_d7 <- 0
+d0$unsc_fu_d7[which((d0$fu_advice!=1 |  is.na(d0$fu_advice)) & (d0$fu_advice_hf!=1 | is.na(d0$fu_advice_hf)) & d0$fac_any_d7==1 & d0$fu_flag_d7==1 & d0$d10_flag==1)] <- 1
+ 
+## flag scheduled follow-up (from scheduled/unscheduled visit)
+d0$unsc_fu_vis <- 0
+d0$unsc_fu_vis[which((d0$fu_advice!=1 |  is.na(d0$fu_advice)) & (d0$fu_advice_hf!=1 | is.na(d0$fu_advice_hf)) & d0$sc_unsc_flag==1 & d0$d10_flag_rep==1)] <- 1
+
+
+```
+
+```{r FLAG FIRST ENCOUNTERS}
+
+#Check previous enrollment codebooks
+d0_cb_in[which(d0_cb_in$db_name=="prev_enrl"), c("db_name", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="prev_enrl"), c("db_name", "value", "category")]
+
+#flag first encounters
+d0$first_enc <- 0
+d0$first_enc[which(d0$prev_enrl==3)] <- 1
+d0$first_enc <- factor(d0$first_enc)
+
+```
+
+```{r FORMAT YOUNG INFANTS}
+
+d0$yg_infant <- set_labels(factor(d0$yg_infant), labels=c("2-59 months of age", "Under 2 months of age"))
+
+```
+
+```{r FORMAT AGE}
+
+#format as numeric continuous age
+d0$age_mo <- as.numeric(d0$age_mo)
+
+#format order age categories
+table(d0$who_age_ctg)
+d0$who_age_ctg <- factor(d0$who_age_ctg, levels=c("[1-6d]", "[7-27d]", "[28-59d]", "[60-364d]", "[12-59m]"))
+d0$who_age_ctg <- set_labels(d0$who_age_ctg, labels=c("1 to 6 days", "7 to 27 days", "28 to 59 days", "60 to 364 days", "12 to 59 months"))
+
+#format age for modelling
+d0$age_mod <- NA
+d0$age_mod[which(d0$who_age_ctg%in%c("[1-6d]", "[7-27d]", "[28-59d]"))] <- 0
+d0$age_mod[which(d0$who_age_ctg=="[60-364d]")] <- 1
+d0$age_mod[which(d0$who_age_ctg=="[12-59m]")] <- 2
+d0$age_mod <- factor(d0$age_mod)
+d0$age_mod <- set_labels(d0$age_mod, labels=c("Under 2 months", "2 to 12 months", "13 to 59 months"))
+
+```
+
+```{r FORMAT SEX}
+
+#check codebooks for sex
+d0_cb_in[which(d0_cb_in$db_name=="sex"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="sex"), c("db_name", "label", "value", "category")]
+
+d0$sex <- set_labels(factor(d0$sex),labels=c(d0_cb_in$category[which(d0_cb_in$db_name=="sex")][1:2], "Unknown")) #replace "other" with "unknown"
+
+```
+
+```{r MAIN CAREGIVER}
+
+#check codebooks for main caregiver
+d0_cb_in[which(d0_cb_in$label=="b4) Among those accompanying the child, who is the main caregiver?"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$label=="c4) Among those accompanying the child, who is selected as the main caregiver?"), c("db_name", "label", "value", "category")]
+
+#derive variable for table
+d0$main_cg_der <- NA
+d0$main_cg_der[which(d0$main_cg==1)] <- 0
+d0$main_cg_der[which(d0$main_cg==2)] <- 1
+d0$main_cg_der[which(!d0$main_cg%in%c(1,2) & !is.na(d0$main_cg))] <- 3
+
+d0$main_cg_der <- set_labels(factor(d0$main_cg_der), labels=c("Mother", "Father", "Other"))
+
+```
+
+```{r TRAVEL TIME TO FACILITY}
+
+#check codebooks for travel time to facility
+d0_cb_in[which(d0_cb_in$db_name=="trans_time"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="trans_time"), c("db_name", "label", "value", "category")]
+
+#derive variable for table
+d0$trans_time_der <- d0$trans_time
+d0$trans_time_der[which(d0$trans_time%in%c(3,4))] <- 3
+d0$trans_time_der[which(d0$trans_time%in%c(98,97))] <- 98
+
+d0$trans_time_der <- set_labels(factor(d0$trans_time_der), labels=c("<30 minutes", "30 to 60 minutes", ">60 minutes", "Unknown"))
+
+```
+
+```{r ILLNESS DURATION}
+
+#format as numeric
+d0$sick_duration <- as.numeric(d0$sick_duration)
+
+#format for modelling
+d0$sick_duration_mod <- 0
+d0$sick_duration_mod[which(d0$sick_duration>3 & d0$sick_duration<=7)] <- 1
+d0$sick_duration_mod[which(d0$sick_duration>7)] <- 2
+
+d0$sick_duration_mod <- factor(d0$sick_duration_mod)
+d0$sick_duration_mod <- set_labels(factor(d0$sick_duration_mod), labels=c("0 to 3 days", "4 to 7 days", "7 to 14 days"))
+
+```
+
+```{r PREVIOUS CARE}
+
+#check codebooks for previous care
+d0_cb_in[which(d0_cb_in$db_name=="journey"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="journey"), c("db_name", "label", "value", "category")]
+
+#derive variables for each category (answers not mutually exclusive)
+#Yes, at a health facility
+d0$prev_care_yhf_der <- 0
+d0$prev_care_yhf_der[which(d0$journey%in%c(d0$journey[grep("1",d0$journey)], d0$journey[grep("2",d0$journey)]))] <- 1
+
+d0$prev_care_yhf_der <- set_labels(factor(d0$prev_care_yhf_der, levels=c(1,0)), labels=c("Yes, at a health facility", "dummy"))
+
+#Yes, not at a health facility
+d0$prev_care_nhf_der <- 0
+d0$prev_care_nhf_der[which(d0$journey%in%d0$journey[grep("3",d0$journey)])] <- 1
+
+d0$prev_care_nhf_der <- set_labels(factor(d0$prev_care_nhf_der, levels=c(1,0)), labels=c("Yes, not at a health facility","dummy"))
+
+#No
+d0$prev_care_no_der <- 0
+d0$prev_care_no_der[which(d0$journey%in%d0$journey[grep("96",d0$journey)])] <- 1
+
+d0$prev_care_no_der <- set_labels(factor(d0$prev_care_no_der, levels=c(1,0)), labels=c("No","dummy"))
+
+#Unknown
+d0$prev_care_un_der <- 0
+d0$prev_care_un_der[which(d0$journey%in%c(d0$journey[grep("97",d0$journey)], d0$journey[grep("98",d0$journey)]))] <- 1
+
+d0$prev_care_un_der <- set_labels(factor(d0$prev_care_un_der, levels=c(1,0)), labels=c("Unknown","dummy"))
+
+```
+
+```{r PREVIOUS TREATMENT}
+
+#check codebooks for previous treatment
+d0_cb_in[which(d0_cb_in$db_name=="prev_rx"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="prev_rx"), c("db_name", "label", "value", "category")]
+
+#derive variables for each category (answers not mutually exclusive)
+#antibiotic
+d0$prev_trt_ab_der <- 0
+d0$prev_trt_ab_der[which(d0$prev_rx%in%d0$prev_rx[grep("1",d0$prev_rx)])] <- 1
+
+d0$prev_trt_ab_der <- set_labels(factor(d0$prev_trt_ab_der, levels=c(1,0)), labels=c("Antibiotic","dummy"))
+
+#antimalarial
+d0$prev_trt_am_der <- 0
+d0$prev_trt_am_der[which(d0$prev_rx%in%d0$prev_rx[grep("2",d0$prev_rx)])] <- 1
+
+d0$prev_trt_am_der <- set_labels(factor(d0$prev_trt_am_der, levels=c(1,0)), labels=c("Antimalarial","dummy"))
+
+#other, medical
+d0$prev_trt_om_der <- 0
+d0$prev_trt_om_der[which(d0$prev_rx%in%d0$prev_rx[grep("3",d0$prev_rx)])] <- 1
+
+d0$prev_trt_om_der <- set_labels(factor(d0$prev_trt_om_der, levels=c(1,0)), labels=c("Other, medical","dummy"))
+
+#other, herbs/traditional medicines
+d0$prev_trt_oh_der <- 0
+d0$prev_trt_oh_der[which(d0$prev_rx%in%d0$prev_rx[grep("4",d0$prev_rx)])] <- 1
+
+d0$prev_trt_oh_der <- set_labels(factor(d0$prev_trt_oh_der, levels=c(1,0)), labels=c("Other, herbs/traditional medicines","dummy"))
+
+#other, unspecified
+d0$prev_trt_ou_der <- 0
+d0$prev_trt_ou_der[which(d0$prev_rx%in%d0$prev_rx[grep("99",d0$prev_rx)] | (d0$prev_rx%in%d0$prev_rx[grep("5",d0$prev_rx)] & d0$country=="in") |  (d0$prev_rx%in%d0$prev_rx[grep("98",d0$prev_rx)] & d0$country=="tz"))] <- 1
+
+d0$prev_trt_ou_der <- set_labels(factor(d0$prev_trt_ou_der, levels=c(1,0)), labels=c("Other, unspecified","dummy"))
+
+#other, unknown
+d0$prev_trt_un_der <- 0
+d0$prev_trt_un_der[which(d0$prev_rx%in%d0$prev_rx[grep("97",d0$prev_rx)] | (d0$prev_rx%in%d0$prev_rx[grep("98",d0$prev_rx)] & d0$country=="in") | d0$journey%in%c(d0$journey[grep("97",d0$journey)], d0$journey[grep("98",d0$journey)]))] <- 1
+
+d0$prev_trt_un_der <- set_labels(factor(d0$prev_trt_un_der, levels=c(1,0)), labels=c("Unknown","dummy"))
+
+#no previous treatment
+d0$prev_trt_no_der <- 0
+d0$prev_trt_no_der[which(d0$journey%in%d0$journey[grep("96",d0$journey)])] <- 1
+
+d0$prev_trt_no_der <- set_labels(factor(d0$prev_trt_no_der, levels=c(1,0)), labels=c("None","dummy"))
+
+
+```
+
+```{r COMBINED PREVIOUS CARE AND PREVIOUS TREATMENT}
+
+d0$pre_care_trt <- NA
+d0$pre_care_trt[which(d0$prev_care_yhf_der==0 & d0$prev_care_nhf_der==0 & d0$prev_care_no_der==1 & d0$prev_care_un_der==0 & d0$prev_trt_ab_der==0 & d0$prev_trt_am_der==0 & d0$prev_trt_om_der==0 & d0$prev_trt_oh_der==0 & d0$prev_trt_ou_der==0 & d0$prev_trt_un_der==0 & d0$prev_trt_no_der==1)] <- 0 #no previous care and treatment
+d0$pre_care_trt[which((d0$prev_care_yhf_der==1 | d0$prev_care_nhf_der==1) & d0$prev_care_no_der==0 & d0$prev_care_un_der==0 & (d0$prev_trt_ab_der==1 | d0$prev_trt_am_der==1 | d0$prev_trt_om_der==1 | d0$prev_trt_oh_der==1 | d0$prev_trt_ou_der==1 | d0$prev_trt_un_der==1) & d0$prev_trt_no_der==0)] <- 1 #previous care and treatment
+d0$pre_care_trt[which(d0$prev_care_yhf_der==0 & d0$prev_care_nhf_der==0 & d0$prev_care_no_der==0 & d0$prev_care_un_der==1)] <- 2 #previous care and treatment unknown (if care unknown treatment questions not asked)
+
+d0$pre_care_trt <- set_labels(factor(d0$pre_care_trt), labels=c("No", "Yes", "Unknown"))
+
+```
+
+```{r PREVIOUS HOSPITALISATION}
+
+#check codebooks for previous hospitalisation
+d0_cb_in[which(d0_cb_in$db_name=="hospit"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="hospit"), c("db_name", "label", "value", "category")]
+
+d0_cb_in[which(d0_cb_in$db_name=="prev_hosp"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="prev_hosp"), c("db_name", "label", "value", "category")]
+
+#prev_hosp is only asked if care was seek in another health facility, hospit is asked to all children not hospitalised for current illness (in Tanzania)
+#in India in 14 cases hospit was asked also when children reported hospitalised for current illness (prev_hosp=1 overrule any hospit recorded)
+d0$prev_hosp_der <- NA
+d0$prev_hosp_der[which(d0$hospit==0)] <- 0
+d0$prev_hosp_der[which(d0$hospit%in%c(1,2,3))] <- 2
+d0$prev_hosp_der[which(d0$hospit%in%c(98,97))] <- 98
+d0$prev_hosp_der[which(d0$prev_hosp==1)] <- 1
+
+d0$prev_hosp_der <- set_labels(factor(d0$prev_hosp_der, levels=c(1,2,0,98)), labels=c("Yes, for current illness", "Yes, ever", "No", "Unknown"))
+
+```
+
+```{r DANGER SIGNS AT PRESENTATION}
+
+#convulsions
+d0$sx_convulsions <- set_labels(factor(d0$sx_convulsions, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+
+#lethargic or unconscious
+d0$sx_lethargy <- set_labels(factor(d0$sx_lethargy, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+
+#vomiting everything
+d0$vomit_ev_der <- NA
+d0$vomit_ev_der[which((d0$sx_vomit==1 & d0$sx_vomit_evthing==0) | d0$sx_vomit==0)] <- 0
+d0$vomit_ev_der[which(d0$sx_vomit==1 & d0$sx_vomit_evthing==1)] <- 1
+d0$vomit_ev_der[which((d0$sx_vomit==1 & d0$sx_vomit_evthing==98) | d0$sx_vomit==98)] <- 98
+d0$vomit_ev_der <- set_labels(factor(d0$vomit_ev_der,  levels=c(1,0,98)), labels=c("Yes", "No", "Unknown"))
+
+#completely unable to eat or drink
+d0$eat_drink_der <- NA
+d0$eat_drink_der[which((d0$sx_less_feed==1 & d0$sx_unable_feed==0) | d0$sx_less_feed==0)] <- 0
+d0$eat_drink_der[which(d0$sx_less_feed==1 & d0$sx_unable_feed==1)] <- 1
+d0$eat_drink_der[which((d0$sx_less_feed==1 & d0$sx_unable_feed==98) | d0$sx_less_feed==98)] <- 98
+d0$eat_drink_der <- set_labels(factor(d0$eat_drink_der, levels=c(1,0,98)), labels=c("Yes", "No", "Unknown"))
+
+##at least one danger sign
+d0$danger_sign <- 0
+d0$danger_sign[which(d0$sx_convulsions==1 | d0$sx_lethargy==1 | d0$vomit_ev_der==1 | d0$eat_drink_der==1)] <- 1
+d0$danger_sign <- set_labels(factor(d0$danger_sign, levels=c(1,0)), labels=c("Yes", "No"))
+
+```
+
+```{r SYMPTOMS AT PRESENTATION}
+
+#cough
+d0$sx_cough <- set_labels(factor(d0$sx_cough, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+d0$sx_cough_onset <- as.numeric(d0$sx_cough_onset)
+
+#difficult breathing
+d0$sx_difficulty_breath <- set_labels(factor(d0$sx_difficulty_breath, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+d0$sx_difficulty_breath_onset <- as.numeric(d0$sx_difficulty_breath_onset)
+
+#diarrhoea
+d0$sx_diarrhoea <- set_labels(factor(d0$sx_diarrhoea, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+d0$sx_diarrhoea_onset <- as.numeric(d0$sx_diarrhoea_onset)
+
+#fever
+d0$sx_fever <- set_labels(factor(d0$sx_fever, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+d0$sx_fever_onset <- as.numeric(d0$sx_fever_onset)
+
+#vomiting
+d0$sx_vomit <- set_labels(factor(d0$sx_vomit, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+
+#eating or breastfeeding less than usual
+d0$sx_less_feed <- set_labels(factor(d0$sx_less_feed, levels=c(1,0,98)), labels=c("Yes","No", "Unknown"))
+
+###cough or difficulty breathing
+d0$cough_breath <- 0
+d0$cough_breath[which(d0$sx_cough==1 | d0$sx_difficulty_breath==1)] <- 1
+d0$cough_breath <- set_labels(factor(d0$cough_breath), labels=c("No", "Yes"))
+
+###one between cough, fever and diarrhoea
+d0$cough_diarr_fev <- 0
+d0$cough_diarr_fev[which(d0$sx_cough==1 | d0$sx_diarrhoea==1 | d0$sx_fever==1)] <- 1
+d0$cough_diarr_fev <- set_labels(factor(d0$cough_diarr_fev), labels=c("No", "Yes"))
+
+```
+
+```{r DEFINE ARM LABEL}
+
+d0$intervention <- set_labels(factor(d0$intervention), labels=c("Control", "PO", "PO+CDSA"))
+
+```
+
+```{r FORMAT STRATIFICATION FACTORS}
+
+#facility type (PHCs/CHCs India and health centers/dispensaries Tanzania)
+d0$type_der <- NA
+d0$type_der[which(d0$type%in%c("PHC","dispensary"))] <- 0
+d0$type_der[which(d0$type%in%c("CHC","health center"))] <- 1 
+d0$type_der <- set_labels(factor(d0$type_der), labels=c("PHC/Dispensary", "CHC/Health center"))
+
+#districts 
+d0$district <- d0$lvl2
+d0$district <- factor(d0$district, levels=c("Deoria", "Sitapur", "Unnao", "Kaliua", "Sengerema", "Tanga"))
+
+```

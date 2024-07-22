@@ -1,0 +1,234 @@
+
+# Primary outcomes results
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: primary_out.Rmd  
+# program purpose: Primary outcomes analysis (referral and antibiotics) 
+# author: Silvia Cicconi  
+###
+```
+
+## Proportion of children referred by a primary healthcare provider to a higher level of care at Day0 consultation
+
+For the primary analysis, a child is considered referred if, at Day0, the research assistant confirms that an urgent referral advice was recorded for the child. If urgency in unknown, referral is assumed to be urgent.
+
+### Referral summary - primary analysis
+
+```{r REFERRALS PRIMARY ANALYSIS}
+
+#descriptive summary
+tab_ref <- sum.tab(d0, "urg_ref", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref, row.names = F) 
+
+```
+
+
+A sensitivity analysis is performed on first encounters, which includes only the first enrollment episode of each child during the study period. 
+
+### Referral summary - sensitivity analysis (first encounters)
+
+```{r REFERRAL SENSITIVITY ANALYSIS-FIRST ENCOUNTERS}
+
+##urgency agreement between caregiver and registry
+tab_ref_sa_first <- sum.tab(d0[which(d0$first_enc==1),], "urg_ref", "pre_post")
+
+#Modelling (combined and by country)
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref_sa_first, row.names = F) 
+
+```
+
+Two sensitivity analyses are performed considering different referral definitions that takes into account the caregiver confirmation of having received a referral advice for the child. The first analysis assumes that urgent referral was recorded from at least one of the two sources and the second analysis assumes that urgent referral was recorded from both sources. Note that urgency as reported from the caregiver was only introduced in the post-intervention period in Kenya. Therefore, for the pre-intervention period, urgent referral is defined as the primary analysis. More details can be found in the SAP Section 6.2.4. 
+
+### Referral summary - sensitivity analysis (urgent referral recorded in the registry or from the caregiver)
+
+```{r REFERRALS SENSITIVITY ANALYSES-REFERRAL DEFINITIONS1}
+
+##urgency at least one between caregiver and registry
+tab_ref_sa_ref1 <- sum.tab(d0, "urg_ref_sa1", "pre_post")
+
+```
+
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref_sa_ref1, row.names = F) 
+
+```
+
+In the table below, the estimate in the post-intervention in Senegal is not applicable as urgency reported by the caregiver was not collected.
+
+### Referral summary - sensitivity analysis (urgent referral recorded both in the registry and from the caregiver)
+
+```{r REFERRALS SENSITIVITY ANALYSES-REFERRAL DEFINITIONS2}
+
+##urgency agreement between caregiver and registry
+tab_ref_sa_ref2 <- sum.tab(d0, "urg_ref_sa2", "pre_post")
+
+#remove post Senegal as not applicable
+tab_ref_sa_ref2[which(tab_ref_sa_ref2[,1]%in%c("Combined", "Senegal")),3] <- "NA"
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref_sa_ref2, row.names = F) 
+
+```
+
+
+Two sensitivity analyses are performed considering different pre-post definitions. The first analysis defines pre and post based on overlapping periods of the year (September-January for Kenya and August-February for Senegal). The second analysis defines pre and post based on country-specific key dates (intense supervision in Kenya and end of strike in Senegal). More details can be found in the SAP Section 6.2.4. 
+
+### Referral summary - sensitivity analysis (pre-post overlapping periods of the year)
+
+```{r REFERRALS SENSITIVITY ANALYSES-PREPOST DEFINITIONS1}
+
+##pre-post overlapping periods
+tab_ref_sa_pp1 <- sum.tab(d0, "urg_ref", "pre_post_sa1")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref_sa_pp1, row.names = F) 
+
+```
+
+### Referral summary - sensitivity analysis (pre-post based on country-specific key dates)
+
+```{r REFERRALS SENSITIVITY ANALYSES-PREPOST DEFINITIONS2}
+
+##pre-post key dates
+tab_ref_sa_pp2 <- sum.tab(d0, "urg_ref", "pre_post_sa2")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref_sa_pp2, row.names = F) 
+
+```
+
+
+## Proportion of children prescribed with an antibiotic at Day0
+
+For the antibiotic-related outcomes, only antibacterials for systemic use are taken into account.
+
+### Antibiotics prescription summary - primary analysis
+
+```{r ANTIBIOTICS PRESCRIPTION SUM}
+
+tab_antibio <- sum.tab(d0, "antibio_flag", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_antibio, row.names = F) 
+
+```
+
+A sensitivity analysis is performed on first encounters, which includes only the first enrollment episode of each child during the study period. 
+
+### Antibiotics prescription summary - sensitivity analysis (first encounters)
+
+```{r ANTIBIOTICS SENSITIVITY ANALYSIS-FIRST ENCOUNTERS}
+
+##urgency agreement between caregiver and registry
+tab_antibio_sa_first <- sum.tab(d0[which(d0$first_enc==1),], "antibio_flag", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_antibio_sa_first, row.names = F) 
+
+```
+
+### Antibiotics prescription summary - sensitivity analysis (pre-post overlapping periods of the year)
+
+```{r ANTIBIOTICS PRESCRIPTION-SENSITIVITY ANALYSIS1}
+
+##pre-post overlapping periods
+tab_antibio_sa1 <- sum.tab(d0, "antibio_flag", "pre_post_sa1")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_antibio_sa1, row.names = F) 
+
+```
+
+### Antibiotics prescription summary - sensitivity (pre-post based on country-specific key dates)
+
+```{r ANTIBIOTICS PRESCRIPTION-SENSITIVITY ANALYSIS2}
+
+##pre-post key dates
+tab_antibio_sa2 <- sum.tab(d0, "antibio_flag", "pre_post_sa2")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_antibio_sa2, row.names = F) 
+
+```
+
+\newpage
+
+## Summary of primary outcomes results
+
+The primary outcomes are assessed using generalised estimating equation for logistic regression, with facilities as clusters. Estimates for the pre-post effect on the outcomes are shown in terms of odds ratios and risk difference (with the pre-intervention period being the reference category) and their associated 95% confidence intervals. Results from both univariate and multivariate models are presented when numbers allowed. Not estimable effects are denoted in the summary table below as "NE".
+
+Multivariate models are adjusted for age, sex, travel time to facility, illness duration, previous care and treatment, cough, fever, diarrhoea and danger signs.
+
+
+
+### Summary of primary outcomes results - infants under 2 months of age
+
+```{r, results='asis'}
+
+knitr::kable(mod.sum_yi, row.names = F)
+
+```
+
+
+
+### Summary of primary outcomes results - children 2-59 months of age
+
+```{r, results='asis'}
+
+knitr::kable(mod.sum, row.names = F)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

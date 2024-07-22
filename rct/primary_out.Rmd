@@ -1,0 +1,355 @@
+
+# Primary outcomes results
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: primary_out.Rmd  
+# program purpose: Primary outcomes analysis (referral and antibiotics) 
+# author: Silvia Cicconi  
+###
+```
+
+
+## Proportion of children with a severe complication by Day7
+
+Severe complication is defined as death or secondary hospitalisation. For the primary analysis, secondary hospitalisation refers to any delayed hospitalisation (occurring at any point greater than 24 hours after Day0 consultation) and any hospitalisation occurring without a referral. A child is considered admitted to hospital within 24 hours of Day0 if the date of hospitalisation is the same as Day0 date or is one day after Day0 date.
+
+### Severe complication by Day7 summary - primary analysis ITT
+
+```{r SEVERE COMPLICATION BY DAY 7}
+
+##Proportion of severe complication by Day 7
+tab_sev_comp_d7 <- sum.tab(d0, "sev_comp_d7", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7, row.names = F) 
+
+```
+
+### Severe complication by Day7 summary - primary analysis complete cases
+
+```{r SEVERE COMPLICATION BY DAY 7 CC}
+
+##Proportion of severe complication by Day 7
+tab_sev_comp_d7_cc <- sum.tab(d0[which(d0$cc==1),], "sev_comp_d7", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_cc, row.names = F) 
+
+```
+
+
+A sensitivity analysis is performed on first encounters, which includes only the first enrollment episode of each child during the study period. 
+
+
+### Severe complication by Day7 summary - sensitivity analysis (first encounters)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSIS FIRST ENCOUNTERS}
+
+tab_sev_comp_d7_sa_first <- sum.tab(d0[which(d0$first_enc==1),], "sev_comp_d7", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa_first, row.names = F) 
+
+```
+
+
+Sensitivity analyses are performed considering different cut-offs for the definition of delayed hospitalisations. Instead of 24 hours after Day consultation same day, 3 days and 7 days will be used. 
+
+### Severe complication by Day7 summary - sensitivity analysis (delayed hospitalisation cut-off same day of Day0)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES1}
+
+##same day
+tab_sev_comp_d7_sa1 <- sum.tab(d0, "sev_comp_d7_sa1", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa1, row.names = F) 
+
+```
+
+### Severe complication by Day7 summary - sensitivity analysis (delayed hospitalisation cut-off 3 days after Day0)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES2}
+
+##3 days 
+tab_sev_comp_d7_sa2 <- sum.tab(d0, "sev_comp_d7_sa2", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa2, row.names = F) 
+
+```
+
+### Severe complication by Day7 summary - sensitivity analysis (delayed hospitalisation cut-off 7 days after Day0)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES3}
+
+##7 days
+tab_sev_comp_d7_sa3 <- sum.tab(d0, "sev_comp_d7_sa3", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa3, row.names = F) 
+
+```
+
+Two sensitivity analyses are performed considering different referral definitions for determining primary and secondary hospitalisations. The first analysis assumes that urgent referral was recorded from both caregiver and registry (Tanzania only) and the second analysis assumes urgent referrals only as recorded in the registry. 
+
+### Severe complication by Day7 summary - sensitivity analysis (urgent referral recorded both in the registry and from the caregiver)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES REF1}
+
+tab_sev_comp_d7_sa_ref1 <- sum.tab(d0, "sev_comp_d7_sa_ref1", "intervention")
+
+#set to NA and - combined and India as this could only be assessed for Tanzania
+tab_sev_comp_d7_sa_ref1 [which(tab_sev_comp_d7_sa_ref1 [,1]%in%c("Combined", "India")), c(2,3)] <- "NA"
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa_ref1, row.names = F) 
+
+```
+
+
+### Severe complication by Day7 summary - sensitivity analysis (urgent referral recorded only from the registry)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES REF2}
+
+tab_sev_comp_d7_sa_ref2 <- sum.tab(d0, "sev_comp_d7_sa_ref2", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa_ref2, row.names = F) 
+
+```
+
+
+## Proportion of children admitted to hospital within 24 hours of Day0 consultation and as a result of a referral ('Appropriate referral')
+
+For the primary analysis, a child is considered admitted to hospital within 24 hours of Day0 if the date of hospitalisation is the same as Day0 date or is one day after Day0 date. Proportions are presented using both all children recruited and only children who were referred as denominator.
+
+### 'Appropriate referral' summary - primary analysis ITT
+
+```{r PRIMARY HOSPITALISATION}
+
+tab_pr_hos <- sum.tab(d0, "pr_hos", "intervention") #all children
+tab_pr_hos.1 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos", "intervention") #only referred
+
+#combine
+tab_pr_hos <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos)-1))), tab_pr_hos), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1)-1))), tab_pr_hos.1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos, row.names = F) 
+
+```
+
+### 'Appropriate referral' summary - primary analysis complete cases
+
+```{r PRIMARY HOSPITALISATION CC}
+
+tab_pr_hos_cc <- sum.tab(d0[which(d0$cc==1),], "pr_hos", "intervention") #all children
+tab_pr_hos.1_cc <- sum.tab(d0[which(d0$urg_ref==1 & d0$cc==1),], "pr_hos", "intervention") #only referred
+
+#combine
+tab_pr_hos_cc <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_cc)-1))), tab_pr_hos_cc), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_cc)-1))), tab_pr_hos.1_cc))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_cc, row.names = F) 
+
+```
+
+
+A sensitivity analysis is performed on first encounters, which includes only the first enrollment episode of each child during the study period. 
+
+
+### 'Appropriate referral' summary - sensitivity analysis (first encounters)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSIS FIRST ENCOUNTERS}
+
+tab_pr_hos_sa_first <- sum.tab(d0[which(d0$first_enc==1),], "pr_hos", "intervention") #all children
+tab_pr_hos.1_sa_first <- sum.tab(d0[which(d0$urg_ref==1 & d0$first_enc==1),], "pr_hos", "intervention") #only referred
+
+#combine
+tab_pr_hos_sa_first <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa_first)-1))), tab_pr_hos_sa_first), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa_first)-1))), tab_pr_hos.1_sa_first))
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa_first, row.names = F) 
+
+```
+
+
+Sensitivity analyses are performed considering different cut-offs for the definition appropriate hospitalisations. Instead of 24 hours after Day consultation same day, 3 days and 7 days will be used. 
+
+### 'Appropriate referral' summary - sensitivity analysis (hospitalisation cut-off same day of Day0)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES1}
+
+##same day
+tab_pr_hos_sa1 <- sum.tab(d0, "pr_hos_sa1", "intervention")
+tab_pr_hos.1_sa1 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos_sa1", "intervention")
+
+#combine
+tab_pr_hos_sa1 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa1)-1))), tab_pr_hos_sa1), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa1)-1))), tab_pr_hos.1_sa1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa1, row.names = F) 
+
+```
+
+### 'Appropriate referral' summary - sensitivity analysis (hospitalisation cut-off 3 days after Day0)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES2}
+
+##3 days
+tab_pr_hos_sa2 <- sum.tab(d0, "pr_hos_sa2", "intervention")
+tab_pr_hos.1_sa2 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos_sa2", "intervention")
+
+#combine
+tab_pr_hos_sa2 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa2)-1))), tab_pr_hos_sa2), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa2)-1))), tab_pr_hos.1_sa2))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa2, row.names = F) 
+
+```
+
+### 'Appropriate referral' summary - sensitivity analysis (hospitalisation cut-off 7 days of Day0)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES3}
+
+##7 days
+tab_pr_hos_sa3 <- sum.tab(d0, "pr_hos_sa3", "intervention")
+tab_pr_hos.1_sa3 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos_sa3", "intervention")
+
+#combine
+tab_pr_hos_sa3 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa3)-1))), tab_pr_hos_sa3), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa3)-1))), tab_pr_hos.1_sa3))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa3, row.names = F) 
+
+```
+
+
+Two sensitivity analyses are performed considering different referral definitions for determining primary and secondary hospitalisations. The first analysis assumes that urgent referral was recorded from both caregiver and registry (Tanzania only) and the second analysis assumes urgent referrals only as recorded in the registry. 
+
+### 'Appropriate referral' summary - sensitivity analysis (urgent referral recorded both in the registry and from the caregiver)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES REF1}
+
+tab_pr_hos_sa_ref1 <- sum.tab(d0, "pr_hos_sa_ref1", "intervention")
+tab_pr_hos.1_sa_ref1 <- sum.tab(d0[which(d0$urg_ref_sa1==1),], "pr_hos_sa_ref1", "intervention")
+
+#combine
+tab_pr_hos_sa_ref1 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa_ref1)-1))), tab_pr_hos_sa_ref1), 
+                      rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa_ref1)-1))), tab_pr_hos.1_sa_ref1))
+
+#set to NA and - combined and India as this could only be assessed for Tanzania
+tab_pr_hos_sa_ref1[which(tab_pr_hos_sa_ref1[,1]%in%c("Combined", "India")), c(2,3)] <- "NA"
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa_ref1, row.names = F) 
+
+```
+
+
+### 'Appropriate referral' summary - sensitivity analysis (urgent referral recorded only from the registry)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES REF2}
+
+tab_pr_hos_sa_ref2 <- sum.tab(d0, "pr_hos_sa_ref2", "intervention")
+tab_pr_hos.1_sa_ref2 <- sum.tab(d0[which(d0$urg_ref_sa2==1),], "pr_hos_sa_ref2", "intervention")
+
+#combine
+tab_pr_hos_sa_ref2 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa_ref2)-1))), tab_pr_hos_sa_ref2), 
+                      rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa_ref2)-1))), tab_pr_hos.1_sa_ref2))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa_ref2, row.names = F) 
+
+```
+
+
+\newpage
+
+
+## Summary of primary outcomes results
+
+The primary outcomes are assessed using generalised estimating equation for logistic regression, with facilities as clusters. Estimates for the intervention effect on the outcomes are shown in terms of odds ratios and risk difference (with the control arm being the reference category) and their associated 95% confidence intervals. Results from both univariate and multivariate models are presented when numbers allowed. Not estimable intervention effects are denoted in the summary table below as "NE".
+
+Multivariate models are adjusted for districts, facility type (dispensaries or PHCs/haelth centers or CHCs) and previous care or treatment at time of presenting at the facility (no/yes/unknown).
+
+
+
+### Summary of primary outcomes results - infants under 2 months of age
+
+```{r, results='asis'}
+
+knitr::kable(mod.sum_yi, row.names = F)
+
+```
+
+
+
+### Summary of primary outcomes results - children 2-59 months of age
+
+```{r, results='asis'}
+
+knitr::kable(mod.sum, row.names = F)
+
+```
+
+
+

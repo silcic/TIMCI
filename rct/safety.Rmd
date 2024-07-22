@@ -1,0 +1,43 @@
+# Safety evaluation
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: safety.Rmd  
+# program purpose: Follow-up outcomes 
+# author: Silvia Cicconi  
+###
+```
+
+## Proportion of children who experienced a severe complication at any point during the study duration
+
+The table below summarises severe complications (death or secondary hospitalisation) that occurred throughout the duration of the study.
+
+```{r DEATHS SECONDARY HOS SUMMARY}
+
+
+#yi
+safety_summ_tab_yi <- onerow.sum.tab(as_label(d0[which(d0$yg_infant==1),]), vars=c("dth_flag2", "hosp_noref2", "hosp_refdel2", "sev_comp2"), vars_name=c("Deaths", "Hospitalisations without referral", "Hospitalisations with referral but delayed", "Severe complications"), by="intervention")
+
+#ch
+safety_summ_tab_ch <- onerow.sum.tab(as_label(d0[which(d0$yg_infant==0),]), vars=c("dth_flag2", "hosp_noref2", "hosp_refdel2", "sev_comp2"), vars_name=c("Deaths", "Hospitalisations without referral", "Hospitalisations with referral but delayed", "Severe complications"), by="intervention")
+
+
+```
+
+### Deaths and secondary hospitalisations summary - infants under 2 months of age
+
+```{r, results='asis'}
+
+knitr::kable(safety_summ_tab_yi, row.names = F) 
+
+```
+
+### Deaths and secondary hospitalisations summary - children 2-59 months of age
+
+```{r, results='asis'}
+
+knitr::kable(safety_summ_tab_ch, row.names = F) 
+
+```
+

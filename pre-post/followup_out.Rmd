@@ -1,0 +1,103 @@
+# Follow-up outcomes
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: followup_out.Rmd  
+# program purpose: Follow-up outcomes 
+# author: Silvia Cicconi  
+###
+```
+
+## Proportion of children attending scheduled follow-up at the same facility by Day7
+
+Attendance of scheduled follow-up is evaluated from both scheduled/unscheduled visits form and and Day7 follow-up. More details are available in the SAP, Section 6.1.6. Proportions are presented using both all children recruited and only children for whom a follow-up advice was recorded at Day0 as denominator.
+
+### Scheduled follow-up at the same facility summary - from day 7 follow-up
+
+```{r FLAG SCHEDULED FOLLOW-UP AT THE SAME FACILITY - FROM DAY 7}
+
+#all children
+tab_sc_fu_d7 <- sum.tab(d0, "sc_fu_d7", "pre_post")
+#children with fu advice
+tab_sc_fu_d7.1 <- sum.tab(d0[which(d0$fu_advice==1 | d0$fu_advice_hf==1),], "sc_fu_d7", "pre_post")
+
+#combine
+tab_sc_fu_d7 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_sc_fu_d7)-1))), tab_sc_fu_d7), 
+                    rbind(c("(Denominator: children with follow-up advice)", rep("", (ncol(tab_sc_fu_d7.1)-1))), tab_sc_fu_d7.1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sc_fu_d7, row.names = F) 
+
+```
+
+### Scheduled follow-up at the same facility summary - from scheduled/unscheduled visits
+
+```{r FLAG SCHEDULED FOLLOW-UP AT THE SAME FACILITY - FROM SCHEDULED/UNSCHEDULED VISITS}
+
+#all children
+tab_sc_fu_vis <- sum.tab(d0, "sc_fu_vis", "pre_post")
+#children with fu advice
+tab_sc_fu_vis.1 <- sum.tab(d0[which(d0$fu_advice==1 | d0$fu_advice_hf==1),], "sc_fu_vis", "pre_post")
+
+#combine
+tab_sc_fu_vis <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_sc_fu_vis)-1))), tab_sc_fu_vis), 
+                    rbind(c("(Denominator: children with follow-up advice)", rep("", (ncol(tab_sc_fu_vis.1)-1))), tab_sc_fu_vis.1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sc_fu_vis, row.names = F) 
+
+```
+
+## Proportion of children presenting for unscheduled follow-up at any health facility by Day7
+
+Attendance of unscheduled follow-up is evaluated from both scheduled/unscheduled visits form and and Day7 follow-up. More details are available in the SAP, Section 6.1.6. Proportions are presented using both all children recruited and only children for whom a follow-up advice was not recorded at Day0 as denominator.
+
+### Unscheduled follow-up at any health facility summary - from day 7 follow-up
+
+```{r FLAG UNSCHEDULED FOLLOW-UP AT ANY FACILITY - FROM DAY 7}
+
+#all children
+tab_unsc_fu_d7 <- sum.tab(d0, "unsc_fu_d7", "pre_post")
+#children without fu advice
+tab_unsc_fu_d7.1 <- sum.tab(d0[which((d0$fu_advice!=1 |  is.na(d0$fu_advice)) & (d0$fu_advice_hf!=1 | is.na(d0$fu_advice_hf))),], "unsc_fu_d7", "pre_post")
+
+#combine
+tab_unsc_fu_d7 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_unsc_fu_d7)-1))), tab_unsc_fu_d7), 
+                    rbind(c("(Denominator: children without follow-up advice)", rep("", (ncol(tab_unsc_fu_d7.1)-1))), tab_unsc_fu_d7.1))
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_unsc_fu_d7, row.names = F) 
+
+```
+
+### Unscheduled follow-up at any health facility summary - from scheduled/unscheduled visits
+
+```{r FLAG UNSCHEDULED FOLLOW-UP AT ANY FACILITY - FROM SCHEDULED/UNSCHEDULED VISITS}
+
+#all children
+tab_unsc_fu_vis <- sum.tab(d0, "unsc_fu_vis", "pre_post")
+#children without fu advice
+tab_unsc_fu_vis.1 <- sum.tab(d0[which((d0$fu_advice!=1 |  is.na(d0$fu_advice)) & (d0$fu_advice_hf!=1 | is.na(d0$fu_advice_hf))),], "unsc_fu_vis", "pre_post")
+
+#combine
+tab_unsc_fu_vis <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_unsc_fu_vis)-1))), tab_unsc_fu_vis), 
+                    rbind(c("(Denominator: children without follow-up advice)", rep("", (ncol(tab_unsc_fu_vis.1)-1))), tab_unsc_fu_vis.1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_unsc_fu_vis, row.names = F) 
+
+```

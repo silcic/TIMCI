@@ -1,0 +1,77 @@
+---
+title: "TIMCI cross-country randomised controlled trial"
+subtitle: "Final Analysis Report (India and Tanzania) v2.0"
+author: "Silvia Cicconi"
+date: "`r format(Sys.time(), '%d-%m-%Y')`"
+output:
+    word_document:
+      reference_docx: report_template.docx
+      toc: yes
+params:
+  echo: 
+  include:
+  results:
+  warning:
+  error:
+  message: 
+  log:
+  fig.asp:
+  fig.width:
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r, child='global.Rmd'}
+```
+
+```{r, child='data_handling.Rmd'}
+```
+
+```{r, child='data_handling_antibio_diag.Rmd'}
+```
+
+```{r EXPORT DATASETS}
+source(file.path(paste0(dir_pro, "/data_exports.R")))
+```
+
+```{r, child='recruitment.Rmd'}
+```
+
+```{r, child='baseline.Rmd'}
+```
+
+```{r, child='adh_dev.Rmd'}
+```
+
+```{r CALL IN MODELS ESTIMATES}
+load(file=file.path(paste0(dir_gen_dat, "/models_summary.RData")))
+```
+
+```{r, child='primary_out.Rmd'}
+```
+
+```{r, child='hos_ref_out.Rmd'}
+```
+
+```{r, child='antibio_antimal_out.Rmd'}
+```
+
+```{r, child='hypox_out.Rmd'}
+```
+
+```{r, child='followup_out.Rmd'}
+```
+
+```{r, child='secondary_out.Rmd'}
+```
+
+```{r, child='safety.Rmd'}
+```
+
+```{r, child='lfu.Rmd'}
+```
+
+
+

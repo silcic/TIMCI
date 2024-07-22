@@ -1,0 +1,163 @@
+# Antibiotic-related secondary outcomes
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: antibio_antimal_out.Rmd  
+# program purpose: Antibiotics and antimalarial related outcomes
+# author: Silvia Cicconi  
+###
+```
+
+## Proportion of children prescribed a diagnosis-appropriate antibiotic
+
+Appropriateness of antibiotic prescription in relation to diagnosis is evaluated in different ways, considering only cases where a single diagnosis was provided.
+
+The table below summarises the proportion of children who received a diagnosis for which a systemic antibiotic was indicated and a systemic antibiotic was prescribed. Only children with a diagnosis for which a systemic antibiotic was indicated are included in the denominator.
+
+
+### Diagnosis-appropriate systemic antibiotic prescription summary
+
+```{r ANTIBIOTIC APPROPRIATENESS SUM}
+
+#prescribed when diagnosis required
+tab_antibio_app <- sum.tab(d0[which(d0$single_diag==1 & d0$antibio_req==1),], "antibio_app", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_antibio_app, row.names = F) 
+
+```
+
+The table below summarises the proportion of children who received a diagnosis for which a systemic antibiotic was not indicated and a systemic antibiotic was prescribed. Only children with a diagnosis for which a systemic antibiotic was not indicated are included in the denominator.
+
+### Diagnosis-inappropriate systemic antibiotic prescription summary
+
+```{r ANTIBIOTIC INAPPROPRIATENESS SUM}
+
+#prescribed when diagnosis not required
+tab_antibio_unapp <- sum.tab(d0[which(d0$single_diag==1 & d0$antibio_req==0),], "antibio_unapp", "pre_post")
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_antibio_unapp, row.names = F) 
+
+```
+
+The table below summarises the proportion of children who received first-line antibiotics according to recommendation for IMCI diagnosis for which specific antibiotic(s) are indicated. Only children who received an IMCI diagnosis requiring specific antibiotics will be counted in the denominator.
+
+### Diagnosis-appropriate first-line systemic antibiotic prescription summary
+
+```{r ANTIBIOTIC APPROPRIATENESS FIRST LINE}
+
+#prescribed first line
+tab_antibio_first_line <- sum.tab(d0[which(!is.na(d0$antibio_first_line)),], "antibio_first_line", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_antibio_first_line, row.names = F) 
+
+```
+
+# Antimalarial-related secondary outcomes
+
+These secondary outcomes are only described for children 2 to 59 months of age.
+
+## Proportion of febrile children tested for malaria at Day0
+
+Only febrile children are counted in the denominator.
+
+### Febrile children tested for malaria summary
+
+```{r FEBRILE CHILDREN TESTED FOR MALARIA}
+
+##proportion of febrile children (denominator) tested for malaria
+tab_feb_mal <- sum.tab(d0[which(d0$fev_flag==1),], "mal_flag", "pre_post")
+
+#remove yg infants
+tab_feb_mal <- tab_feb_mal[which(tab_feb_mal[,1]=="2-59 months of age"):nrow(tab_feb_mal),]
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_feb_mal, row.names = F) 
+
+```
+
+## Proportion of malaria positive children prescribed an antimalarial
+
+Only children with a positive malaria test are counted in the denominator.
+
+### Malarial prescription for malaria positive children summary
+
+```{r ANTIMALARIAL FOR POSITIVE MALARIA}
+
+##proportion of positive malaria children (denominator) prescribed with antimalarial
+tab_pos_mal <- sum.tab(d0[which(d0$mal_flag==1 & d0$malaria_res==2),], "antimal_flag", "pre_post")
+
+#remove yg infants
+tab_pos_mal <- tab_pos_mal[which(tab_pos_mal[,1]=="2-59 months of age"):nrow(tab_pos_mal),]
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pos_mal, row.names = F) 
+
+```
+
+## Proportion of malaria negative children prescribed an antimalarial
+
+Only children with a negative malaria test are counted in the denominator.
+
+### Malarial prescription for malaria negative children summary
+
+```{r ANTIMALARIAL FOR NEGATIVE MALARIA}
+
+##proportion of positive malaria children (denominator) prescribed with antimalarial
+tab_neg_mal <- sum.tab(d0[which(d0$mal_flag==1 & d0$malaria_res==1),], "antimal_flag", "pre_post")
+
+#remove yg infants
+tab_neg_mal <- tab_neg_mal[which(tab_neg_mal[,1]=="2-59 months of age"):nrow(tab_neg_mal),]
+
+#modelling
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_neg_mal, row.names = F) 
+
+```
+
+## Proportion of untested children prescribed an antimalarial
+
+Only children untested for malaria test are counted in the denominator.
+
+### Malarial prescription for untested children summary
+
+```{r ANTIMALARIAL FOR UNTESTED CHILDREN}
+
+##proportion of positive malaria children (denominator) prescribed with antimalarial
+tab_un_mal <- sum.tab(d0[which(d0$mal_flag==0),], "antimal_flag", "pre_post")
+
+#remove yg infants
+tab_un_mal <- tab_un_mal[which(tab_un_mal[,1]=="2-59 months of age"):nrow(tab_un_mal),]
+
+#modelling
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_un_mal, row.names = F) 
+
+```

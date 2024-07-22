@@ -1,0 +1,229 @@
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: baseline.Rmd  
+# program purpose: summary of baseline characteristics 
+# author: Silvia Cicconi  
+# inputs: Datasets and codebooks  
+# output(s): Datasets with additional derived variables 
+# note: check git information for date, version and modification history
+###
+```
+
+# Baseline characteristics
+
+```{r THREE MOST COMMON SYMPTOMS}
+
+##Select three most common symptoms for baseline table
+#check codebooks for previous hospitalisation
+d0_cb_ke[which(d0_cb_ke$db_name=="sx_var"), c("db_name", "label", "value", "category")]
+d0_cb_se[which(d0_cb_se$name=="sx_var"), c("name", "label", "values")]
+
+#generate separate variables for multiple recorded symptoms
+sx_var_temp_yi <- str_split(d0$sx_var[which(d0$yg_infant==1)], ";", simplify = T) #split all possible op in separate variables
+sx_var_temp_ch <- str_split(d0$sx_var[which(d0$yg_infant==0)], ";", simplify = T) #split all possible op in separate variables
+
+#save names of the three most common symptoms (except "other" and "none of the above")
+list_sx_yi <- names(sort(table(sx_var_temp_yi), decreasing = T)); list_sx_yi <- list_sx_yi[which(!list_sx_yi%in%c("","96","99"))]; list_sx_yi <- list_sx_yi[1:3]; list_sx_yi
+list_sx_ch <- names(sort(table(sx_var_temp_ch), decreasing = T)); list_sx_ch <- list_sx_ch[which(!list_sx_ch%in%c("","96","99"))]; list_sx_ch <- list_sx_ch[1:3]; list_sx_ch
+
+#generate variables
+for(i in list_sx_yi){
+  d0[, paste("sx_yi", `i`, sep="_")] <- 0
+  d0[which(d0$sx_var%in%c(d0$sx_var[grep(`i`,d0$sx_var)])), paste("sx_yi", `i`, sep="_")] <- 1
+  d0[, paste("sx_yi", `i`, sep="_")] <- factor(d0[, paste("sx_yi", `i`, sep="_")])
+}
+for(i in list_sx_ch){
+  d0[, paste("sx_ch", `i`, sep="_")] <- 0
+  d0[which(d0$sx_var%in%c(d0$sx_var[grep(`i`,d0$sx_var)])), paste("sx_ch", `i`, sep="_")] <- 1
+  d0[, paste("sx_ch", `i`, sep="_")] <- factor(d0[, paste("sx_ch", `i`, sep="_")])
+}
+
+
+```
+
+### Baseline characteristics summary 
+
+```{r BASELINE TABLE}
+
+##combined
+bsl_tab <- bs.sum(as_label(d0[, c("age_mo", "who_age_ctg", "sex", "main_cg_der", "trans_time_der", "sick_duration_mod", "prev_care_yhf_der", "prev_care_nhf_der", "prev_care_no_der", "prev_care_un_der",
+                         "prev_trt_ab_der", "prev_trt_am_der", "prev_trt_om_der", "prev_trt_oh_der", "prev_trt_ou_der", "prev_trt_no_der", "prev_trt_un_der", "prev_hosp_der")]), as_label(d0$pre_post), 
+                  names=c("Age (months)*", "Age (WHO categories)", "Sex", "Main caregiver", "Travel time to facility", "Illness duration", "Previous care for current illness**", rep("dummy", 3), "Previous treatment for current illness**", rep("dummy", 6), "Previous hospitalisation"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F)
+
+##by country
+for(i in country_list){
+  
+  assign(paste("bsl_tab", `i`, sep="_"), bs.sum(as_label(d0[which(d0$country==`i`), c("age_mo", "who_age_ctg", "sex", "main_cg_der", "trans_time_der", "sick_duration_mod", "prev_care_yhf_der", "prev_care_nhf_der", "prev_care_no_der", "prev_care_un_der",
+                         "prev_trt_ab_der", "prev_trt_am_der", "prev_trt_om_der", "prev_trt_oh_der", "prev_trt_ou_der", "prev_trt_no_der", "prev_trt_un_der", "prev_hosp_der")]), as_label(d0$pre_post[which(d0$country==`i`)]), 
+                  names=c("Age (months)*", "Age (WHO categories)", "Sex", "Main caregiver", "Travel time to facility", "Illness duration", "Previous care for current illness**", rep("dummy", 3), "Previous treatment for current illness**", rep("dummy", 6), "Previous hospitalisation"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F))
+
+}
+
+
+#adjust labels in country-specific tables
+bsl_tab_ke[,c(1,2)] <- bsl_tab[,c(1,2)]; bsl_tab_se[,c(1,2)] <- bsl_tab[,c(1,2)]
+
+
+#remove dummies
+bsl_tab <- bsl_tab[-which(bsl_tab$`Statistics/Categories`=="dummy"),]
+bsl_tab$Variables[which(bsl_tab$Variables=="dummy")] <- ""
+
+bsl_tab_ke <- bsl_tab_ke[-which(bsl_tab_ke$`Statistics/Categories`=="dummy"),]
+bsl_tab_ke$Variables[which(bsl_tab_ke$Variables=="dummy")] <- ""
+
+bsl_tab_se <- bsl_tab_se[-which(bsl_tab_se$`Statistics/Categories`=="dummy"),]
+bsl_tab_se$Variables[which(bsl_tab_se$Variables=="dummy")] <- ""
+
+#replace pre-post label with column names
+names(bsl_tab_ke)[c(3,4)] <- paste(get_labels(d0$pre_post), substr(names(bsl_tab_ke)[c(3,4)], 3, nchar(names(bsl_tab_ke)[c(3,4)])))
+
+names(bsl_tab_se)[c(3,4)] <- paste(get_labels(d0$pre_post), substr(names(bsl_tab_se)[c(3,4)], 3, nchar(names(bsl_tab_se)[c(3,4)])))
+
+###check age category if numerical age is missing
+table(d0$who_age_ct[which(is.na(d0$age_mo))], d0$country[which(is.na(d0$age_mo))])
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(bsl_tab, row.names = F) 
+
+```
+
+*Children whose month of birth was unknown are classified in the 12 to 59 months WHO category. \
+**These questions allowed for multiple answers, therefore options are not mutually exclusive.
+
+
+### Baseline characteristics summary - Kenya
+
+```{r, results='asis'}
+
+knitr::kable(bsl_tab_ke, row.names = F) 
+
+```
+
+*The child whose month of birth was unknown are classified in the 12 to 59 months WHO category. \
+**These questions allowed for multiple answers, therefore options are not mutually exclusive.
+
+### Baseline characteristics summary - Senegal
+
+```{r, results='asis'}
+
+knitr::kable(bsl_tab_se, row.names = F) 
+
+```
+
+*Children whose month of birth was unknown are classified in the 12 to 59 months WHO category. \
+**These questions allowed for multiple answers, therefore options are not mutually exclusive.
+
+
+
+
+```{r SIGNS AND SYMPTOMS ALL CHILDREN}
+
+##combined
+bsl_pres_tab <- bs.sum(as_label(d0[, c("danger_sign","sx_convulsions", "sx_lethargy", "vomit_ev_der", "eat_drink_der", "sx_cough", "sx_cough_onset", "sx_difficulty_breath", "sx_difficulty_breath_onset", "sx_diarrhoea", "sx_diarrhoea_onset", "sx_fever", "sx_fever_onset", "sx_vomit", "sx_less_feed")]), as_label(d0$pre_post), 
+                  names=c("At least one danger sign", "Convulsions", "Lethargic or unconscious", "Vomiting everything", "Completely unable to eat or drink", "Cough", "Cough duration (days)**", "Difficult breathing/rapid breathing", "Difficult breathing/rapid breathing (days)**", "Diarrhoea", "Diarrhoea duration (days)**", "Fever", "Fever duration (days)**", "Vomiting", "Eating or breastfeeding less than usual"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F)
+
+##by country
+for(i in country_list){
+  
+  assign(paste("bsl_pres_tab", `i`, sep="_"), bs.sum(as_label(d0[which(d0$country==`i`), c("danger_sign","sx_convulsions", "sx_lethargy", "vomit_ev_der", "eat_drink_der", "sx_cough", "sx_cough_onset", "sx_difficulty_breath", "sx_difficulty_breath_onset", "sx_diarrhoea", "sx_diarrhoea_onset", "sx_fever", "sx_fever_onset", "sx_vomit", "sx_less_feed")]), as_label(d0$pre_post[which(d0$country==`i`)]), 
+                  names=c("At least one danger sign", "Convulsions", "Lethargic or unconscious", "Vomiting everything", "Completely unable to eat or drink", "Cough", "Cough duration (days)**", "Difficult breathing/rapid breathing", "Difficult breathing/rapid breathing (days)**", "Diarrhoea", "Diarrhoea duration (days)**", "Fever", "Fever duration (days)**", "Vomiting", "Eating or breastfeeding less than usual"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F))
+
+}
+
+
+#adjust labels in country-specific tables
+bsl_pres_tab_ke[,c(1,2)] <- bsl_pres_tab[,c(1,2)]; bsl_pres_tab_se[,c(1,2)] <- bsl_pres_tab[,c(1,2)]
+
+#remove "unknown" for continuous variables (only collected for those who answered "yes")
+bsl_pres_tab <- bsl_pres_tab[-(which(grepl("\\*", bsl_pres_tab$Variables)==T)+1),]
+bsl_pres_tab_ke <- bsl_pres_tab_ke[-(which(grepl("\\*", bsl_pres_tab_ke$Variables)==T)+1),]
+bsl_pres_tab_se <- bsl_pres_tab_se[-(which(grepl("\\*", bsl_pres_tab_se$Variables)==T)+1),]
+
+#replace pre-post label with column names
+names(bsl_pres_tab_ke)[c(3:4)] <- paste(get_labels(d0$pre_post), substr(names(bsl_pres_tab_ke)[c(3:4)], 3, nchar(names(bsl_pres_tab_ke)[c(3:4)])))
+names(bsl_pres_tab_se)[c(3:4)] <- paste(get_labels(d0$pre_post), substr(names(bsl_pres_tab_se)[c(3:4)], 3, nchar(names(bsl_pres_tab_se)[c(3:4)])))
+
+```
+
+### Signs and symptoms at presentations summary - combined, all children
+
+```{r, results='asis'}
+
+knitr::kable(bsl_pres_tab, row.names = F) 
+
+```
+
+**These are only evaluated for children presenting with the referenced sign/symptom.
+
+### Signs and symptoms at presentations summary - Kenya, all children
+
+```{r, results='asis'}
+
+knitr::kable(bsl_pres_tab_ke, row.names = F) 
+
+```
+
+**These are only evaluated for children presenting with the referenced sign/symptom.
+
+### Signs and symptoms at presentations summary - Senegal, all children
+
+```{r, results='asis'}
+
+knitr::kable(bsl_pres_tab_se, row.names = F) 
+
+```
+
+**These are only evaluated for children presenting with the referenced sign/symptom.
+
+
+
+### Signs and symptoms at presentations summary - Infants under 2 months of age
+
+Please note that although the report refers to infants under 2 months of age, from the data young infants are defined from 1 to < 60 days. 
+
+```{r SIGNS AND SIMPTOMS AT PRESENTATION YOUNG INFANTS}
+
+bsl_pres_yi_tab <- onerow.sum.tab(d0[which(d0$yg_infant==1),], vars=c("danger_sign","sx_convulsions", "sx_lethargy", "vomit_ev_der", "eat_drink_der", "sx_cough", "sx_cough_onset", "sx_difficulty_breath", "sx_difficulty_breath_onset", "sx_diarrhoea", "sx_diarrhoea_onset", "sx_fever", "sx_fever_onset", "sx_vomit", "sx_less_feed", "sx_yi_2", "sx_yi_5", "sx_yi_10"), vars_name=c("At least one danger sign", "Convulsions", "Lethargic or unconscious", "Vomiting everything", "Completely unable to eat or drink", "Cough", "Cough duration (days)**", "Difficult breathing/rapid breathing", "Difficult breathing/rapid breathing (days)**", "Diarrhoea", "Diarrhoea duration (days)**", "Fever", "Fever duration (days)**", "Vomiting", "Eating or breastfeeding less than usual", "Runny nose / cold", "Skin problem", "Abdominal pain"), by="pre_post")
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(bsl_pres_yi_tab, row.names = F) 
+
+```
+
+**These are only evaluated for children presenting with the sign/symptom above.
+
+### Signs and symptoms at presentations summary - Children 2-59 months of age
+
+Please note that although the report refers to 2-59 months of age, from the data children are defined from 60 days to <= 59 months. 
+
+```{r SIGNS AND SIMPTOMS AT PRESENTATION OLDER CHILDREN}
+
+bsl_pres_ch_tab <- onerow.sum.tab(d0[which(d0$yg_infant==0),], vars=c("danger_sign","sx_convulsions", "sx_lethargy", "vomit_ev_der", "eat_drink_der", "sx_cough", "sx_cough_onset", "sx_difficulty_breath", "sx_difficulty_breath_onset", "sx_diarrhoea", "sx_diarrhoea_onset", "sx_fever", "sx_fever_onset", "sx_vomit", "sx_less_feed", "sx_ch_2", "sx_ch_5", "sx_ch_4"), vars_name=c("At least one danger sign", "Convulsions", "Lethargic or unconscious", "Vomiting everything", "Completely unable to eat or drink", "Cough", "Cough duration (days)**", "Difficult breathing/rapid breathing", "Difficult breathing/rapid breathing (days)**", "Diarrhoea", "Diarrhoea duration (days)**", "Fever", "Fever duration (days)**", "Vomiting", "Eating or breastfeeding less than usual", "Runny nose / cold", "Skin problem", "Eye problem"), by="pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(bsl_pres_ch_tab, row.names = F) 
+
+```
+
+**These are only evaluated for children presenting with the sign/symptom above.
+
+
+
+
+
+
+
+
+

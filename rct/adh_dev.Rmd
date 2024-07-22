@@ -1,0 +1,242 @@
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: adh_dev.Rmd  
+# program purpose: summary of intervention adherence and protocol deviations
+# author: Silvia Cicconi  
+# inputs: Datasets and codebooks  
+# output(s): Datasets with additional derived variables 
+# note: check git information for date, version and modification history
+###
+```
+
+# Intervention adherence and protocol deviations
+
+## Intervention adherence
+This section only include data from the intervention arms.
+
+### Summary of pulse oximetry adherence
+
+Pulse oximeter use was indicated for all infants under 2 months of age and all children 2-59 months in India. In Tanzania, indication was for all infants under 2 months of age and for children 2-59 months with cough/difficulty breathing or red/yellow IMCI classification. 
+Pulse oximeter is considered used if the research assistant found in clinical records any SpO2 value (readable or unreadable).
+
+```{r PULSE OXIMETER ADHERENCE}
+
+#check codebooks for pulse ox reading
+d0_cb_in[which(d0_cb_in$db_name=="spo2"), c("db_name", "label", "value", "category")]
+d0_cb_tz[which(d0_cb_tz$db_name=="spo2"), c("db_name", "label", "value", "category")]
+
+##from pulse oximetry measures
+d0$pulse_ox_spo2 <- 0
+d0$pulse_ox_spo2[which(d0$spo2%in%c(1,95))] <- 1
+d0$pulse_ox_spo2 <- factor(d0$pulse_ox_spo2)
+
+#overall indication
+pulse_ox_adh_ov <- sum.tab(d0[which(d0$pulse_ox_ind==1),], "pulse_ox_spo2", "intervention")
+
+pulse_ox_adh_ov[which(pulse_ox_adh_ov$Control!=""), "Control"] <- "-" #replace "-" for control
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(pulse_ox_adh_ov , row.names = F) 
+
+```
+
+For older children in Tanzania, adherence evaluation is based on indication defined from caregivers reported cough/difficulty breathing or indication defined from IMCI classification. The table below summarises adherence separately, on the basis of the two definitions.
+
+### Summary of pulse oximetry adherence for children 2-59 months of age in Tanzania
+
+```{r PULSE OXIMETER ADHERENCE Tanzania OLDER CHILDREN}
+
+#indicated as per caregivers reported cough/difficulty breathing
+pulse_ox_adh_cg <- onerow.sum.tab(d0[which(d0$pulse_ox_ind_cg==1 & d0$yg_infant==0),], "pulse_ox_spo2", "Pulse oximetry adherence (indicated as per caregivers reported cough/difficulty breathing)", "intervention")
+#indicated as per caregivers reported cough/difficulty breathing
+pulse_ox_adh_imci <- onerow.sum.tab(d0[which(d0$pulse_ox_ind_imci==1 & d0$yg_infant==0),], "pulse_ox_spo2", "Pulse oximetry adherence (indicated as per IMCI classification)", "intervention")
+
+
+##combine table
+pulse_ox_adh1 <- rbind(pulse_ox_adh_cg, pulse_ox_adh_imci)
+pulse_ox_adh1[which(pulse_ox_adh1$Control!=""), "Control"] <- "-" #replace "-" for control
+
+##Keep only Tanzania
+pulse_ox_adh1 <- pulse_ox_adh1[which(!pulse_ox_adh1[,1]%in%c("Combined", "India")),]
+pulse_ox_adh1[,1] <- gsub("Tanzania","", pulse_ox_adh1[,1])
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(pulse_ox_adh1, row.names = F)
+
+```
+
+
+### Summary of pulse oximetry adherence weekly and by facility
+
+Note that graphs are based on overall pulse oximeter indication (in Tanzania, from either caregiver reported cough/difficulty breathing or IMCI classification).
+
+```{r GRAPHS WEEKLY PULSE OXIMETER ADHERENCE, fig.height = 12, fig.width = 9}
+
+##sequence of dates indicating the start of each week
+d0 <- d0[order(d0$country, d0$lvl2),]
+fid_list <- c(d0$fid[!duplicated(d0$fid) & d0$intervention!=0 & d0$country=="in"], d0$fid[!duplicated(d0$fid) & d0$intervention!=0 & d0$country=="tz"])
+fid_list_names <- c(paste(d0$facility_name[!duplicated(d0$fid) & d0$intervention!=0 & d0$country=="in"], "-", d0$lvl2[!duplicated(d0$fid) & d0$intervention!=0 & d0$country=="in"], sep=""), paste(d0$facility_name[!duplicated(d0$fid) & d0$intervention!=0 & d0$country=="tz"], "-", d0$lvl2[!duplicated(d0$fid) & d0$intervention!=0 & d0$country=="tz"], sep=""))
+
+d0$week <- NA
+pseudo.dt_po <- list()
+
+for(i in 1:length(fid_list)){
+
+  #intervention arms only
+  pseudo.dt_po[[i]] <- seq(min(d0$date_visit[which(d0$intervention!=0 & d0$fid==fid_list[i])]), max(d0$date_visit[which(d0$intervention!=0 & d0$fid==fid_list[i])]), 7)
+
+  for(j in 1:(length(pseudo.dt_po[[i]])-1)){d0$week[which(d0$date_visit>=pseudo.dt_po[[i]][j] & d0$date_visit<pseudo.dt_po[[i]][j+1] & d0$fid==fid_list[i])] <- j}; d0$week[which(d0$date_visit>=pseudo.dt_po[[i]][length(pseudo.dt_po[[i]])] & d0$fid==fid_list[i])] <- length(pseudo.dt_po[[i]])
+
+}
+
+#save graph per each facility
+for(i in 1:length(fid_list)){
+  assign(paste("gr", i, sep=""), bar_graph_perc(d0[which(d0$intervention!=0 & d0$fid==fid_list[i]),], "pulse_ox_spo2", fid_list[i], fid_list_names[i], pseudo.dt_po[[i]]))
+}
+
+
+
+#split for country and 5 per page
+length(unique(d0$fid[which(d0$intervention!=0 & d0$country=="in")])); length(unique(d0$fid[which(d0$intervention!=0 & d0$country=="tz")]))
+
+grid.arrange(gr1, gr2, gr3, gr4, gr5, ncol=1, top="India")
+grid.arrange(gr6, gr7, gr8, gr9, gr10, ncol=1, top="India")
+grid.arrange(gr11, gr12, gr13, gr14, gr15, ncol=1, top="India")
+grid.arrange(gr16, gr17, gr18, gr19, gr20, ncol=1, top="India")
+grid.arrange(gr21, gr22, gr23, gr24, gr25, ncol=1, top="India")
+grid.arrange(gr26, gr27, gr28, gr29, gr30, ncol=1, top="India")
+grid.arrange(gr31, gr32, gr33, gr34, gr35, ncol=1, top="India")
+grid.arrange(gr36, gr37, gr38, gr39, gr40, ncol=1, top="India")
+grid.arrange(gr41, gr42, gr43, gr44, gr45, ncol=1, top="India")
+grid.arrange(gr46, gr47, gr48, gr49, gr50, ncol=1, top="India")
+grid.arrange(gr51, gr52, gr53, ncol=1, top="India")
+
+grid.arrange(gr54, gr55, gr56, gr57, gr58,  ncol=1, top="Tanzania")
+grid.arrange(gr59, gr60, gr61, gr62, gr63,  ncol=1, top="Tanzania")
+grid.arrange(gr64, gr65, gr66, gr67, gr68, ncol=1, top="Tanzania")
+grid.arrange(gr69, gr70, gr71, gr72, gr73, ncol=1, top="Tanzania")
+grid.arrange(gr74, gr75, gr76, gr77, gr78, ncol=1, top="Tanzania")
+grid.arrange(gr79, gr80, gr81, gr82, gr83, ncol=1, top="Tanzania")
+grid.arrange(gr84, gr85, gr86, gr87, gr88, ncol=1, top="Tanzania")
+grid.arrange(gr89, gr90, gr91, gr92, gr93, ncol=1, top="Tanzania")
+grid.arrange(gr94, gr95, gr96, gr97, gr98, ncol=1, top="Tanzania")
+
+```
+
+### Summary of CDSA adherence
+
+CDSA was indicated for all young infants and older children in both countries. CDSA adherence is evaluated comparing the number of children enrolled and the number of records in the CDSA database.
+
+```{r CDSA ADHERENCE}
+
+##children enrolled in d0
+enrol_d0 <- nrow(d0[which(d0$country=="tz" & d0$intervention==2),])
+
+##children enrolled in CDSA
+enrol_cdsa <- nrow(cdsa_tz)
+
+##combine
+cdsa_adh <- as.data.frame(t(cbind(c("Tanzania", enrol_d0, enrol_cdsa, paste(round(enrol_cdsa/enrol_d0*100,1), "%", sep="")))))
+names(cdsa_adh) <- c("", "Children enrolled in PO+CDSA arm", "Children recorded in CDSA", "Children recorded in CDSA/children enrolled in PO+CDSA arm")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(cdsa_adh, row.names = F)
+
+```
+
+
+### Summary of CDSA adherence weekly and by facility
+
+```{r GRAPHS WEEKLY CDSA ADHERENCE, fig.height = 12, fig.width = 9}
+
+##sequence of dates indicating the start of each week
+fid_list <- d0$fid[!duplicated(d0$fid) & d0$intervention==2 & d0$country=="tz"]
+fid_list_names <- paste(d0$facility_name[!duplicated(d0$fid) & d0$intervention==2 & d0$country=="tz"], "-", d0$lvl2[!duplicated(d0$fid) & d0$intervention==2 & d0$country=="tz"], sep="")
+
+##sequence of dates indicating the start of each week
+cdsa_tz$week <- NA
+d0$week <- NA
+pseudo.dt_po <- list()
+
+
+for(i in 1:length(fid_list)){
+  
+  pseudo.dt_po[[i]] <- seq(min(d0$date_visit[which(d0$intervention==2 & d0$fid==fid_list[i])]), max(d0$date_visit[which(d0$intervention==2 & d0$fid==fid_list[i])]), 7)
+  
+    for(j in 1:(length(pseudo.dt_po[[i]])-1)){
+      cdsa_tz$week[which(cdsa_tz$date_visit>=pseudo.dt_po[[i]][j] & cdsa_tz$date_visit<pseudo.dt_po[[i]][j+1] & cdsa_tz$fid==fid_list[i])] <- j
+      d0$week[which(d0$date_visit>=pseudo.dt_po[[i]][j] & d0$date_visit<pseudo.dt_po[[i]][j+1] & d0$fid==fid_list[i])] <- j} 
+  
+  cdsa_tz$week[which(cdsa_tz$date_visit>=pseudo.dt_po[[i]][length(pseudo.dt_po[[i]])] & cdsa_tz$fid==fid_list[i])] <- length(pseudo.dt_po[[i]])
+  d0$week[which(d0$date_visit>=pseudo.dt_po[[i]][length(pseudo.dt_po[[i]])] & d0$fid==fid_list[i])] <- length(pseudo.dt_po[[i]])
+  
+}
+
+
+#save graph per each facility
+for(i in 1:length(fid_list)){
+  assign(paste("gr", i, sep=""), bar_graph_2b(d0[which(d0$intervention==2 & d0$fid==fid_list[i]),], cdsa_tz[which(cdsa_tz$fid==fid_list[i]),], fid_list[i], fid_list_names[i], pseudo.dt_po[[i]]))
+}
+
+##dummy graph for legend
+gr0 <- gr1 + scale_fill_discrete(name = "", labels = c("Children enrolled","Children recorded in CDSA")) + theme(legend.position = "bottom", legend.key.size = unit(0.2, "cm"))
+
+legend <- get_legend(gr0)
+
+
+#split for country and 6 per page
+length(unique(d0$fid[which(d0$intervention==2 & d0$country=="tz")]))
+grid.arrange(gr1, gr2, gr3, gr4, gr5, ncol=1, top="Tanzania", legend)
+grid.arrange(gr6, gr7, gr8, gr9, gr10, ncol=1, top="Tanzania", legend)
+grid.arrange(gr11, gr12, gr13, gr14, gr15, ncol=1, top="Tanzania", legend)
+grid.arrange(gr16, gr17, gr18, gr19, ncol=1, top="Tanzania", legend)
+grid.arrange(gr20, gr21, gr22, gr23, gr24,  ncol=1, top="Tanzania", legend)
+
+
+```
+
+## Protocol deviations
+
+Protocol deviations are evaluated in terms of follow-up not attempted when expected to be conducted (after 7 days and after 28 days of day 0, for all children except withdrawals occurring before day 7 or day 28 respectively). Attempts performed more than 30 days of day 0 are not considered valid for day 7 follow-up and attempts performed more than 60 days of day 0 are not considered valid for day 28 follow-up (see SAP Section 6.1.1).
+
+### Follow-up not attempted at Day 7
+
+```{r PROTOCOL DEVIATIONS D7}
+
+#table d7
+tab_prot_dev_d7 <- sum.tab(d0[-which(d0$wth_flag_d7==1),], "no_att_fu_flag_d7", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_prot_dev_d7, row.names = F)
+
+```
+
+### Follow-up not attempted at Day 28
+
+```{r PROTOCOL DEVIATIONS D28}
+
+#table d28
+tab_prot_dev_d28 <- sum.tab(d0[-which(d0$wth_flag_d28==1),], "no_att_fu_flag_d28", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_prot_dev_d28, row.names = F)
+
+```

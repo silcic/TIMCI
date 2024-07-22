@@ -1,0 +1,58 @@
+
+# Missing data description
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: lfu.Rmd  
+# program purpose: Follow-up outcomes 
+# author: Silvia Cicconi  
+###
+```
+
+Missing values are due predominantly to children lost to follow-up and not reached at Day7.
+
+Among `r nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==0),])` children recruited in the pre-intervention period and expected to be followed-up at Day7 (i.e. not withdrawn before Day7), `r nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==0 & d0$fu_flag==0),])` `r paste0(round(nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==0 & d0$fu_flag==0),])/nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==0),])*100),"%")` were lost to follow-up. Similarly, among `r nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==1),])` children recruited in the post-intervention period and expected to be followed-up at Day7 (i.e. not withdrawn before Day7), `r nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==1 & d0$fu_flag==0),])` `r paste0(round(nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==1 & d0$fu_flag==0),])/nrow(d0[which((d0$wth_flag_d7==0 | is.na(d0$wth_flag_d7)) & d0$pre_post==1),])*100),"%")` were lost to follow-up. 
+
+The tables below describes relevant indicators recorded at Day0 by follow-up status.
+
+### Indicators summary by time period and lost to follow-up status
+
+```{r DIAG BINARY INDICATORS}
+
+d0$diag_noh <- 0; d0$diag_noh[which(d0$severe_diag2==1)] <- 1;  d0$diag_noh <- as.factor(d0$diag_noh) #severe without hypox
+d0$diag_h <- 0; d0$diag_h[which(d0$severe_diag2==2)] <- 1;  d0$diag_h <- as.factor(d0$diag_h) #severe with hypox
+
+```
+
+```{r}
+
+miss_tab_lost <- onerow.sum.tab(d0[which(d0$fu_flag==0),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="pre_post")
+
+miss_tab_succ <- onerow.sum.tab(d0[which(d0$fu_flag==1),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="pre_post")
+
+miss_tab <- cbind(miss_tab_lost, miss_tab_succ[,c(2,3)])
+miss_tab <- rbind(c("", names(miss_tab)[2:5]), miss_tab)
+names(miss_tab) <- c("", "Lost to follow-up", "", "Successful follow-up", "")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(miss_tab, row.names = F) 
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

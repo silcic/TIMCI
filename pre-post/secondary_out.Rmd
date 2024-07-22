@@ -1,0 +1,38 @@
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: secondary_out.Rmd  
+# program purpose: Summary of seconday outcomes modelling
+# author: Silvia Cicconi  
+###
+```
+
+
+
+# Summary of secondary outcomes results
+
+Similarly to primary outcomes, the secondary outcomes are assessed using generalised estimating equation for logistic regression, with facilities as clusters.  Estimates for the pre-post effect on the outcomes are shown in terms of odds ratios and risk difference (with the pre-intervention period being the reference category) and their associated 95% confidence intervals. Results from both univariate and multivariate models are presented when numbers allowed. Not estimable intervention effects are denoted in the summary table below as "NE".
+
+Multivariate models are adjusted for age, sex, travel time to facility, illness duration, previous care and treatment, cough, fever, diarrhoea and danger signs.
+
+
+
+
+### Summary of secondary outcomes results - infants under 2 months of age
+
+```{r, results='asis'}
+
+knitr::kable(mod.sum.so_yi, row.names = F)
+
+```
+
+
+
+### Summary of secondary outcomes results - children 2-59 months of age
+
+```{r, results='asis'}
+
+knitr::kable(mod.sum.so, row.names = F)
+
+```
+

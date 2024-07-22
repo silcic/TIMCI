@@ -1,0 +1,118 @@
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: global.Rmd  
+# program purpose: global program for defining directories, loading packages and setting-up global parameters
+# author: Silvia Cicconi  
+###
+```
+
+
+```{r, include=params$log}
+
+knitr::opts_chunk$set(echo=params$echo, include=params$include, results=params$results, warning=params$warning, error=params$error, message=params$message, comment='')
+
+```
+
+
+```{r ENSURE LANGUAGE}
+
+Sys.setlocale("LC_TIME", "English") #set language
+
+```
+
+
+```{r PRINT INFORMATION ON THIS R SESSION}
+
+sessionInfo()
+
+```
+
+
+```{r LOAD PACKAGES} 
+
+##markdown package for running markdown files and exporting into word 
+library(rmarkdown)  
+
+##knit document 
+library(knitr) 
+
+##handles xlsx files 
+library(openxlsx)
+
+#creates diagrams 
+library(DiagrammeR)  
+
+##converts diagrams into exportable format 
+library(DiagrammeRsvg)
+
+##export diagrams
+library(rsvg) 
+
+##generate plots
+library(ggplot2) 
+
+##arrange plots 
+library(gridExtra) 
+
+##manipulate strings 
+library(stringr) 
+
+##data handling 
+library(tidyr) 
+
+##data handling 
+library(dplyr)
+
+##gee models
+library(gee)
+
+##marginal effects
+library(emmeans)
+
+##flexible table formatting 
+library(flextable) 
+
+##work with labelled data 
+library(sjlabelled)  
+
+``` 
+
+
+```{r SET-UP FOLDERS PATH}
+
+#data and codebook exported in SwitchDrive folder
+dir_dat_in <- "C:/Users/ciccsi/switchdrive/TIMCI/3 Scientific Results/2 India/05_rct_hard_lock/08b_India_cleaned_datasets"
+dir_cb_in <- "C:/Users/ciccsi/switchdrive/TIMCI/3 Scientific Results/2 India/05_rct_hard_lock/Codebooks"
+
+dir_dat_tz <- "C:/Users/ciccsi/switchdrive/TIMCI/3 Scientific Results/5 Tanzania/05_rct_hard_lock/08b_Tanzania_cleaned_datasets"
+dir_cb_tz <- "C:/Users/ciccsi/switchdrive/TIMCI/3 Scientific Results/5 Tanzania/05_rct_hard_lock/Codebooks"
+
+
+# sub-folders of the main analysis folder
+dir_pro <- getwd(); dir_pro #default is folder where the .Rmd file is saved
+dir_gen_dat <- file.path(dirname(dir_pro),"generated_data") #generated data folder
+dir_log <- file.path(dirname(dir_pro),"logfiles") #logfiles folder
+dir_out <- file.path(dirname(dir_pro),"outputs") #outputs folder
+
+```
+
+
+```{r SET-UP GLOBAL PARAMETERS}
+
+#country identifiers
+country_list <- c("in", "tz")
+
+```
+
+
+```{r CALL FUNCTIONS}
+
+source("functions.R")
+
+```
+
+
+
+
+

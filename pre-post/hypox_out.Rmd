@@ -1,0 +1,240 @@
+# Hypoxaemia-related secondary outcomes 
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: hypox_out.Rmd  
+# program purpose: Hypoxaemia outcomes 
+# author: Silvia Cicconi  
+# inputs: Datasets and codebooks  
+# output(s): Datasets with additional derived variables 
+# note: check git information for date, version and modification history
+###
+```
+
+These outcomes are only evaluated in the post-intervention period. 
+The table below summarises SpO2 values by different cut-offs.
+
+### SpO2 values summary
+
+```{r HYPOX DESCRIPTIVE TABLE}
+
+d0$hypox_sum <- set_labels(factor(d0$hypox_sum, levels=c(98,5,4,3,2,1,0,99)), labels=c("< 40% (spurious)", 
+                    "40% to < 70%",
+                    "70% to < 90%",
+                    "90% to < 92%",
+                    "92% to < 94%",
+                    "94% to < 95%",
+                    "95% to 100%", 
+		                "Unknown"))
+
+d0$hypox_cat <- set_labels(factor(d0$hypox_cat, levels=c(3,2,1)), labels=c("< 90%", "90% to < 92%", "92% to < 94%"))
+d0$hypox_cat1 <- set_labels(factor(d0$hypox_cat1, levels=c(98,3,2,1,99)), labels=c("< 40% (spurious)", "< 90%", "90% to < 92%", "92% to < 94%", "Unknown"))
+
+d0$hypox_country <- set_labels(factor(d0$hypox_country, levels=c(3,2,1,0)), labels=c("Severe hypoxaemia", "Moderate hypoxaemia", "Mild hypoxaemia", "Normoxaemic"))
+
+
+###young infants
+#frequencies
+hypox_yi <- as_label(table(d0$country[which(d0$yg_infant==1 & d0$pre_post==1)], d0$hypox_sum[which(d0$yg_infant==1 & d0$pre_post==1)]))
+hypox_yi <- rbind(margin.table(hypox_yi, 2), hypox_yi)
+  
+#totals
+num_yi <- as_label(table(d0$country[which(d0$yg_infant==1 & d0$pre_post==1)]))
+num_yi <- c(margin.table(num_yi), num_yi)
+  
+###older children
+#frequencies
+hypox_ch <- as_label(table(d0$country[which(d0$yg_infant==0 & d0$pre_post==1)], d0$hypox_sum[which(d0$yg_infant==0 & d0$pre_post==1)]))
+hypox_ch <- rbind(margin.table(hypox_ch, 2), hypox_ch)
+  
+#totals
+num_ch <- as_label(table(d0$country[which(d0$yg_infant==0 & d0$pre_post==1)]))
+num_ch <- c(margin.table(num_ch), num_ch)
+  
+#combine data for table 
+sum.tab_yi <- data.frame(rbind(rep("",8)))
+sum.tab_ch <- data.frame(rbind(rep("",8)))
+for(j in 1:nrow(hypox_yi)){
+      #calculate percentages
+      perc_yi <- paste(formatC(round(hypox_yi[j,]/num_yi[j]*100, 1), format="f", 1), "%", sep="")
+      perc_ch <- paste(formatC(round(hypox_ch[j,]/num_ch[j]*100, 1), format="f", 1), "%", sep="")
+        
+      #combine frequency and totals
+      fr_n_yi <- paste("[", hypox_yi[j,], "/", num_yi[j], "]", sep="")
+      fr_n_ch <- paste("[", hypox_ch[j,], "/", num_ch[j], "]", sep="")
+        
+      #combine all summaries
+      sum.tab_yi[j+1,] <- paste(perc_yi, fr_n_yi) 
+      sum.tab_ch[j+1,] <- paste(perc_ch, fr_n_ch)
+}
+  
+  ##Combine summaries together
+  hypox_summ <- rbind(sum.tab_yi, sum.tab_ch)
+  
+  #add row names
+  hypox_summ <- cbind(c("Under 2 months of age", "Combined", "Kenya", "Senegal", "2-59 months of age", "Combined", "Kenya", "Senegal"), hypox_summ)
+  
+  #add col names
+  names(hypox_summ) <- c("", get_labels(d0$hypox_sum))
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(hypox_summ, row.names = F) 
+
+```
+
+### SpO2 values distribution - post-intervention period
+
+```{r SPO2 INTERVENTION ARMS, fig.height = 8, fig.width=6}
+
+#save graph overall and by country
+gr <- bar_graph_3b(d0[which(d0$pre_post==1),], "hypox_sum", levels(as_label(d0$hypox_sum)), "Combined")
+gr_ke <- bar_graph_3b(d0[which(d0$pre_post==1 & d0$country=="ke"),], "hypox_sum", levels(as_label(d0$hypox_sum)), "Kenya")
+gr_se <- bar_graph_3b(d0[which(d0$pre_post==1 & d0$country=="se"),], "hypox_sum", levels(as_label(d0$hypox_sum)), "Senegal")
+
+##dummy graph for legend
+gr0 <- gr + scale_fill_discrete(name = "", labels = c("Under 2 months of age", "2-59 months of age")) + theme(legend.position = "bottom", legend.key.size = unit(0.2, "cm"))
+
+legend <- get_legend(gr0)
+
+#arrange
+grid.arrange(gr, gr_ke, gr_se, ncol=1, top="SpO2", legend)
+
+```
+
+
+## Proportion of children with severe, moderate and mild hypoxaemia, adjusted for sites at high altitude
+
+The table below summarises hypoxaemic children disaggregated by SpO2 value ranges. No adjustment for high altitude was required (see SAP Section 6.1.5.1).
+
+### Severe, moderate and mild hypoxaemia summary 
+
+```{r CHILDREN WITH SEVERE MODERATE AND MILD HYPOXAEMIA}
+
+tab_hypox <- sum.tab.cat(d0, "hypox_cat", "SpO2", var2=NULL, "pre_post")
+
+#replace pre as "-"
+tab_hypox[which(tab_hypox[,3]!=""), 3] <- "-"
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_hypox, row.names = F) 
+
+```
+
+## Proportion of children with hypoxaemia (according to different cut-offs) with severe complication
+
+Each hypoxaemia group is the denominator of each proportion.
+
+### Severe complications by hypoxaemia groups summary
+
+```{r CHILDREN WITH SEVERE COMPLICATIONS BY HYPOXAEMIA GROUPS}
+
+tab_hypox_sc <- sum.tab.cat(d0, "hypox_cat1", "SpO2", var2="sev_comp", "pre_post")
+
+#replace pre as "-"
+tab_hypox_sc[which(tab_hypox_sc[,3]!=""), 3] <- "-"
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_hypox_sc, row.names = F) 
+
+```
+
+## Proportion of children with severe hypoxaemia not meeting any other clinical criteria for severe disease
+
+For this outcome, severe hypoxaemia is defined according to country's specific cut-off (SpO2<90% for Kenya and SpO2<92% for Senegal).
+Due to the complexity of defining severe disease, please interpret with caution. In addition, note that this outcome cannot be calculated for the infants 0-2 months of age as we are unable to differentiate based on the diagnosis criteria.
+
+### Severe hypoxaemia with no severe disease classification recorded
+
+```{r SEVERE HYPOXAEMIA AND NO OTHER SEVERE DISEASE}
+
+tab_hypox_sev_hyp <- sum.tab(d0, "sev_hyp", "pre_post")
+
+#replace pre as "-"
+tab_hypox_sev_hyp[which(tab_hypox_sev_hyp[,2]!=""), 2] <- "-"
+
+#remove yg infants
+tab_hypox_sev_hyp <- tab_hypox_sev_hyp[which(tab_hypox_sev_hyp[,1]=="2-59 months of age"):nrow(tab_hypox_sev_hyp),]
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_hypox_sev_hyp, row.names = F) 
+
+```
+
+## Proportion of children referred with hypoxaemia who received oxygen at hospital
+
+For this outcome, severe hypoxaemia is defined according to country's specific cut-off (SpO2<90% for Kenya and SpO2<92% for Senegal). Proportions are presented using both all children recruited and only children with hypoxaemia as denominator.
+
+### Hypoxaemic children referred who received oxygen in hospital summary
+
+```{r HYPOX CHILDREN WHO WERE REFERRED AND RECEIVED OXYGEN}
+
+tab_hypox_oxy <- sum.tab(d0, "hypo_o2_ref", "pre_post")
+tab_hypox_oxy.1 <- sum.tab(d0[which(d0$hypox_country==3),], "hypo_o2_ref", "pre_post")
+
+#combine
+tab_hypox_oxy <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_hypox_oxy)-1))), tab_hypox_oxy), 
+                    rbind(c("(Denominator: hypoxaemic children)", rep("", (ncol(tab_hypox_oxy.1)-1))), tab_hypox_oxy.1))
+#replace pre as "-"
+tab_hypox_oxy[which(tab_hypox_oxy[,2]!=""), 2] <- "-"
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_hypox_oxy, row.names = F) 
+
+```
+
+The table below presents additional summaries of referral and hospital admission in hypoxaemic children.
+
+```{r DESCRIPTIVE SUMMARY}
+
+##children with severe hypoxaemia, referred, referred and admitted to hospital
+d0$hypox_tmp <- 0
+d0$hypox_tmp[which(d0$severe_diag2==2)] <- 1
+d0$hypox_tmp <- as.factor(d0$hypox_tmp)
+
+
+#yi
+hypox_summ_tab_yi <- rbind(onerow.sum.tab(as_label(d0[which(d0$yg_infant==1),]), vars="severe_diag", vars_name="Children with severe diagnosis", by="pre_post"), onerow.sum.tab(as_label(d0[which(d0$yg_infant==1 & d0$severe_diag==1),]), vars="hypox_tmp", vars_name="Children with severe diagnosis with hypoxaemia", by="pre_post"), onerow.sum.tab(as_label(d0[which(d0$yg_infant==1 & d0$severe_diag==1 & d0$hypox_tmp==1),]), vars="urg_ref", vars_name="Children with severe diagnosis with hypoxaemia referred", by="pre_post"), onerow.sum.tab(as_label(d0[which(d0$yg_infant==1 & d0$severe_diag==1 & d0$hypox_tmp==1 & d0$urg_ref==1),]), vars="hos_flag", vars_name="Children with severe diagnosis with hypoxaemia admitted to hospital", by="pre_post"))
+
+hypox_summ_tab_yi[which(hypox_summ_tab_yi[,2]!=""), 2] <- "-"
+
+#ch
+hypox_summ_tab_ch <- rbind(onerow.sum.tab(as_label(d0[which(d0$yg_infant==0),]), vars="severe_diag", vars_name="Children with severe diagnosis", by="pre_post"), onerow.sum.tab(as_label(d0[which(d0$yg_infant==0 & d0$severe_diag==1),]), vars="hypox_tmp", vars_name="Children with severe diagnosis with hypoxaemia", by="pre_post"), onerow.sum.tab(as_label(d0[which(d0$yg_infant==0 & d0$severe_diag==1 & d0$hypox_tmp==1),]), vars="urg_ref", vars_name="Children with severe diagnosis with hypoxaemia referred", by="pre_post"), onerow.sum.tab(as_label(d0[which(d0$yg_infant==0 & d0$severe_diag==1 & d0$hypox_tmp==1 & d0$urg_ref==1),]), vars="hos_flag", vars_name="Children with severe diagnosis with hypoxaemia admitted to hospital", by="pre_post"))
+
+
+hypox_summ_tab_ch[which(hypox_summ_tab_ch[,2]!=""), 2] <- "-"
+
+
+```
+
+### Referral and hospital admission in severe hypoxaemic infants under 2 months of age
+
+```{r, results='asis'}
+
+knitr::kable(hypox_summ_tab_yi, row.names = F) 
+
+```
+
+### Referral and hospital admission in severe hypoxaemic children 2-59 months of age
+
+```{r, results='asis'}
+
+knitr::kable(hypox_summ_tab_ch, row.names = F) 
+
+```

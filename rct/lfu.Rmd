@@ -1,0 +1,99 @@
+# Missing data description
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: lfu.Rmd  
+# program purpose: Follow-up outcomes 
+# author: Silvia Cicconi  
+###
+```
+
+Missing values are due predominantly to children lost to follow-up and not reached at Day7 and Day28.
+
+The tables below describes relevant indicators recorded at Day0 by follow-up status.
+
+
+```{r DIAG BINARY INDICATORS}
+
+d0$diag_noh <- 0; d0$diag_noh[which(d0$severe_diag2==1)] <- 1;  d0$diag_noh <- as.factor(d0$diag_noh) #severe without hypox
+d0$diag_h <- 0; d0$diag_h[which(d0$severe_diag2==2)] <- 1;  d0$diag_h <- as.factor(d0$diag_h) #severe with hypox
+
+```
+
+### Indicators summary by arms and lost to follow-up status - Day 7
+
+
+```{r}
+
+miss_tab_lost_d7 <- onerow.sum.tab(d0[which(d0$fu_flag_d7==0),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="intervention")
+
+miss_tab_succ_d7 <- onerow.sum.tab(d0[which(d0$fu_flag_d7==1),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="intervention")
+
+miss_tab_d7 <- cbind(miss_tab_lost_d7, miss_tab_succ_d7[,c(2:4)])
+miss_tab_d7 <- rbind(c("", names(miss_tab_d7)[2:7]), miss_tab_d7)
+names(miss_tab_d7) <- c("", "Lost to follow-up at Day 7", "", "", "Successful follow-up at Day 7", "", "")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(miss_tab_d7, row.names = F) 
+
+```
+
+### Indicators summary by arms and lost to follow-up status - Day 28
+
+
+```{r}
+
+miss_tab_lost_d28 <- onerow.sum.tab(d0[which(d0$fu_flag_d28==0),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="intervention")
+
+miss_tab_succ_d28 <- onerow.sum.tab(d0[which(d0$fu_flag_d28==1),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="intervention")
+
+miss_tab_d28 <- cbind(miss_tab_lost_d28, miss_tab_succ_d28[,c(2:4)])
+miss_tab_d28 <- rbind(c("", names(miss_tab_d28)[2:7]), miss_tab_d28)
+names(miss_tab_d28) <- c("", "Lost to follow-up at Day 28", "", "", "Successful follow-up at Day 28", "", "")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(miss_tab_d28, row.names = F) 
+
+```
+
+
+### Indicators summary by arms and lost to follow-up status - both Day 7 and Day 28
+
+
+```{r}
+
+miss_tab_lost <- onerow.sum.tab(d0[which(d0$cc==0),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="intervention")
+
+miss_tab_succ <- onerow.sum.tab(d0[which(d0$cc==1),], vars=c("urg_ref", "diag_noh", "diag_h"), vars_name=c("Urgent referral", "Severe diagnosis without hypoxaemia", "Severe diagnosis with hypoxaemia"), by="intervention")
+
+miss_tab <- cbind(miss_tab_lost, miss_tab_succ[,c(2:4)])
+miss_tab <- rbind(c("", names(miss_tab)[2:7]), miss_tab)
+names(miss_tab) <- c("", "Lost to follow-up at both FU", "", "", "At least one successful follow-up", "", "")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(miss_tab, row.names = F) 
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,159 @@
+
+\newpage
+
+# Health, hospitalisation and referral secondary outcomes
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: hos_ref_out.Rmd  
+# program purpose: Health, hospitalisation and referral outcomes 
+# author: Silvia Cicconi  
+###
+```
+
+## Proportion of children with a severe complication by Day28
+
+Severe complication is defined as death or secondary hospitalisation. For the primary analysis, secondary hospitalisation refers to any delayed hospitalisation (occurring at any point greater than 24 hours after Day0 consultation) and any hospitalisation occurring without a referral. A child is considered admitted to hospital within 24 hours of Day0 if the date of hospitalisation is the same as Day0 date or is one day after Day0 date.
+
+### Severe complication by Day28 summary
+
+```{r SEVERE COMPLICATION BY DAY 28}
+
+##Proportion of severe complication by Day 28
+tab_sev_comp_d28 <- sum.tab(d0, "sev_comp_d28", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d28, row.names = F)
+
+```
+
+
+## Proportion of children referred by a primary healthcare provider to a higher level of care at Day0 consultation
+
+For the primary analysis, a child is considered referred if, at Day0, the research assistant confirms that an urgent referral advice was recorded for the child or the caregiver confirms that the child was urgently referred. Urgency, as reported by the caregiver, was only collected in Tanzania.
+
+### Referral summary 
+
+```{r REFERRALS}
+
+#descriptive summary
+tab_ref <- sum.tab(d0, "urg_ref", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref, row.names = F) 
+
+```
+
+
+## Average length of stay (days) of children admitted to hospital
+
+Average length of stay is calculated only for hospitalised children. If a child was hospitalised more than once, only the first hospitalisation is included in the table below. Hospitalisations identified as second hospitalisations between Day7 and Day28 follow-up are summarised separately.
+The table below summarises mean (standard deviation) and number hospitalised children.
+
+### Average length of stay summary
+
+```{r LENGTH OF STAY}
+
+los_tab_yi <- onerow.sum.tab(d0[which(d0$yg_infant==1),], vars=c("los"), vars_name=c("Under 2 months of age"), by="intervention", med.c=F, mean.c=T)
+los_tab_ch <- onerow.sum.tab(d0[which(d0$yg_infant==0),], vars=c("los"), vars_name=c("2-59 months of age"), by="intervention", med.c=F, mean.c=T)
+
+#combine young infant summary and older children summary
+los_tab <- rbind(los_tab_yi, los_tab_ch)
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(los_tab, row.names = F)
+
+```
+
+
+### Average length of stay summary - second hospitalisation
+
+```{r LENGTH OF STAY SECOND}
+
+los_tab2 <- onerow.sum.tab(d0[which(d0$second_hosp_flag==1),], vars=c("los_d28"), vars_name=c("All children"), by="intervention", med.c=F, mean.c=T)
+
+los_tab2$Control<-gsub(" NA", "NE", los_tab2$Control)
+los_tab2$PO<-gsub(" NA", "NE", los_tab2$PO)
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(los_tab2, row.names = F)
+
+```
+*NE=Not estimable. A second hospitalisation was reported for only one infant under 2 months of age in India in the control arm.
+
+
+## Proportion of children who completed referral as reported at Day7 follow-up
+
+A referral is considered completed if a child attended a hospital, with or without admission.
+
+### Completed referrals at Day7 summary
+
+```{r COMPLETED REFERRAL}
+
+tab_comp_ref_d7 <- sum.tab(d0, "comp_ref_d7", "intervention")
+tab_comp_ref_d7.1 <- sum.tab(d0[which(d0$urg_ref==1),], "comp_ref_d7", "intervention")
+
+#combine
+tab_comp_ref_d7 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_comp_ref_d7)-1))), tab_comp_ref_d7),
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_comp_ref_d7.1)-1))), tab_comp_ref_d7.1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_comp_ref_d7, row.names = F)
+
+```
+
+## Proportion of children with non-severe disease referred to a higher level of care on Day0
+
+Due to the complexity of defining severe disease, please interpret with caution.
+
+### Referral with non-severe disease summary
+
+```{r CHILDREN WITH NON SEVERE DISEASE REFERRED}
+
+tab_ref_non_sev <- sum.tab(d0, "ref_non_sev", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref_non_sev, row.names = F)
+
+```
+
+## Proportion of children cured at Day7 follow-up
+
+### Cured children at Day7 summary
+
+```{r CURED CHILDREN}
+
+tab_cured_d7 <- sum.tab(d0, "cured_d7", "intervention")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_cured_d7, row.names = F)
+
+```
+
+
+
+
+

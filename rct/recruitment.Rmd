@@ -1,0 +1,915 @@
+# Recruitment and participants disposition
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: recruitment.Rmd  
+# program purpose: Summary of milestones, recruitment and recruitment graph
+# author: Silvia Cicconi  
+###
+```
+
+## Study milestones
+This report presents data from the pragmatic cluster randomised controlled trial conducted in India and Tanzania. The study interventions were routine care (control), pulse oximetry with papaer job aid (PO) and pulse oximetry embedded into clinical decision support algorithm (PO+CDSA). The latter was only implemented in Tanzania, therefore the combined analysis will only be presented for control and PO arms.
+
+### Study milestones
+
+```{r MILESTONES TABLE}
+
+#combine row names and values
+mile_tab <- as.data.frame(rbind(c("Data export date", c("-", "2023-08-05", "2023-08-03")),
+                                c("First participant enrolled", c(as.character(min(d0$date_visit)), as.character(min(d0$date_visit[which(d0$country=="in")])), as.character(min(d0$date_visit[which(d0$country=="tz")])))),
+                                c("Last participant enrolled", c(as.character(max(d0$date_visit)), as.character(max(d0$date_visit[which(d0$country=="in")])), as.character(max(d0$date_visit[which(d0$country=="tz")])))),
+                                c("Number of screened children" , c(nrow(scrn), nrow(scrn[which(scrn$country=="in"),]), nrow(scrn[which(scrn$country=="tz"),]))),
+                                c("Number of eligible children", c(nrow(scrn[which(scrn$eligible==1),]), nrow(scrn[which(scrn$eligible==1 & scrn$country=="in"),]), nrow(scrn[which(scrn$eligible==1 & scrn$country=="tz"),]))),
+                                c("Number of enrolled children", c(nrow(scrn[which(scrn$enrolled==1),]), nrow(scrn[which(scrn$enrolled==1 & scrn$country=="in"),]), nrow(scrn[which(scrn$enrolled==1 & scrn$country=="tz"),]))),
+                                c("Number of children in the control arm",  c(nrow(d0[which(d0$intervention==0),]), nrow(d0[which(d0$intervention==0 & d0$country=="in"),]), nrow(d0[which(d0$intervention==0 & d0$country=="tz"),]))),
+                                c("Number of children in the PO arm",  c(nrow(d0[which(d0$intervention==1),]), nrow(d0[which(d0$intervention==1 & d0$country=="in"),]), nrow(d0[which(d0$intervention==1 & d0$country=="tz"),]))), 
+                                c("Number of children in the PO+CDSA arm",  c("-", "-", nrow(d0[which(d0$intervention==2 & d0$country=="tz"),]))),
+                                c("Number (%) of followed-up children in the control arm",  c(paste0(nrow(d0[which(d0$intervention==0 & d0$cc==1),]), " (", round(nrow(d0[which(d0$intervention==0 & d0$cc==1),])/nrow(d0[which(d0$intervention==0),])*100,0), "%)"), paste0(nrow(d0[which(d0$intervention==0 & d0$cc==1 & d0$country=="in"),]), " (", round(nrow(d0[which(d0$intervention==0 & d0$cc==1 & d0$country=="in"),])/nrow(d0[which(d0$intervention==0 & d0$country=="in"),])*100,0), "%)"), paste0(nrow(d0[which(d0$intervention==0 & d0$cc==1 & d0$country=="tz"),]), " (", round(nrow(d0[which(d0$intervention==0 & d0$cc==1 & d0$country=="tz"),])/nrow(d0[which(d0$intervention==0 & d0$country=="tz"),])*100,0), "%)"))),
+                                c("Number (%) of followed-up children in the PO arm",  c(paste0(nrow(d0[which(d0$intervention==1 & d0$cc==1),]), " (", round(nrow(d0[which(d0$intervention==1 & d0$cc==1),])/nrow(d0[which(d0$intervention==1),])*100,0), "%)"), paste0(nrow(d0[which(d0$intervention==1 & d0$cc==1 & d0$country=="in"),]), " (", round(nrow(d0[which(d0$intervention==1 & d0$cc==1 & d0$country=="in"),])/nrow(d0[which(d0$intervention==1 & d0$country=="in"),])*100,0), "%)"), paste0(nrow(d0[which(d0$intervention==1 & d0$cc==1 & d0$country=="tz"),]), " (", round(nrow(d0[which(d0$intervention==1 & d0$cc==1 & d0$country=="tz"),])/nrow(d0[which(d0$intervention==1 & d0$country=="tz"),])*100,0), "%)"))), 
+                                c("Number (%) of followed-up children in the PO+CDSA arm",  c("-", "-", paste0(nrow(d0[which(d0$intervention==2 & d0$country=="tz" & d0$cc==1),]), " (", round(nrow(d0[which(d0$intervention==2 & d0$country=="tz" & d0$cc==1),])/nrow(d0[which(d0$intervention==2 & d0$country=="tz"),])*100,0) , "%)")))
+))
+
+#add headers
+names(mile_tab) <- c("Milestone", "Combined", "India", "Tanzania")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(mile_tab, row.names = F) 
+
+```
+
+
+\newpage
+
+## Participants recruitment and disposition
+
+
+
+```{r NUMBERS FOR CHILDREN DISPOSITION}
+
+###Save numbers needed for diagram
+
+for(i in c(0,1,2)){
+##screening
+assign(paste("n_sc", `i`, sep="_"), nrow(scrn[which(scrn$intervention==`i`),]))
+  for(j in unique(d0$country)){assign(paste("n_sc", `i`, `j`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$country==`j`),]))}
+  
+##ineligibility
+assign(paste("n_in1",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==1),])) #age
+  for(j in unique(d0$country)){assign(paste("n_in1",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==1 & scrn$country==`j`),]))}
+
+assign(paste("n_in2",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==2),])) #age caregiver
+  for(j in unique(d0$country)){assign(paste("n_in2",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==2 & scrn$country==`j`),]))}
+
+assign(paste("n_in3",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==3),])) #trauma only 
+  for(j in unique(d0$country)){assign(paste("n_in3",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==3 & scrn$country==`j`),]))}
+
+assign(paste("n_in4",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==4),])) #immunization only
+  for(j in unique(d0$country)){assign(paste("n_in4",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==4 & scrn$country==`j`),]))}
+
+assign(paste("n_in5",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==5),])) #routine only
+  for(j in unique(d0$country)){assign(paste("n_in5",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==5 & scrn$country==`j`),]))}
+
+assign(paste("n_in6",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==6),])) #admission to an inpatient unit
+  for(j in unique(d0$country)){assign(paste("n_in6",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==6 & scrn$country==`j`),]))}
+
+assign(paste("n_in7",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==7),])) #declined to provide reasons for visiting the facility
+  for(j in unique(d0$country)){assign(paste("n_in7",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==7 & scrn$country==`j`),]))}
+
+assign(paste("n_in8",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==8),])) #repeat visit
+  for(j in unique(d0$country)){assign(paste("n_in8",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$inel_flag==8 & scrn$country==`j`),]))}
+
+##not consented
+assign(paste("n_con",`i`, sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$eligible==1 & scrn$consent==0),]))
+  for(j in unique(d0$country)){assign(paste("n_con",`i`, `j`,sep="_"), nrow(scrn[which(scrn$intervention==`i` & scrn$eligible==1 & scrn$consent==0 & scrn$country==`j`),]))}
+
+##recruited
+assign(paste("n",`i`, sep="_"), nrow(d0[which(d0$intervention==`i`),]))
+  for(j in unique(d0$country)){assign(paste("n",`i`, `j`,sep="_"), nrow(d0[which(d0$intervention==`i` & d0$country==`j`),]))}
+
+##withdrawals before day 7
+assign(paste("n_w7",`i`, sep="_"), nrow(d0[which(d0$intervention==`i` & d0$wth_flag_d7==1),]))
+  for(j in unique(d0$country)){assign(paste("n_w7",`i`, `j`,sep="_"), nrow(d0[which(d0$intervention==`i` & d0$wth_flag_d7==1 & d0$country==`j`),]))}
+
+##successful day 7
+assign(paste("n_fu7",`i`, sep="_"), nrow(d0[which(d0$intervention==`i` & d0$fu_flag_d7==1),]))
+  for(j in unique(d0$country)){assign(paste("n_fu7",`i`, `j`,sep="_"), nrow(d0[which(d0$intervention==`i` & d0$fu_flag_d7==1 & d0$country==`j`),]))}
+
+##withdrawals before day 28
+assign(paste("n_w28",`i`, sep="_"), nrow(d0[which(d0$intervention==`i` & d0$wth_flag_d28==1 & d0$wth_flag_d7==0),]))
+  for(j in unique(d0$country)){assign(paste("n_w28",`i`, `j`,sep="_"), nrow(d0[which(d0$intervention==`i` & d0$wth_flag_d28==1 & d0$wth_flag_d7==0 & d0$country==`j`),]))}
+
+##successful day 28
+assign(paste("n_fu28",`i`, sep="_"), nrow(d0[which(d0$intervention==`i` & d0$fu_flag_d28==1),]))
+  for(j in unique(d0$country)){assign(paste("n_fu28",`i`, `j`,sep="_"), nrow(d0[which(d0$intervention==`i` & d0$fu_flag_d28==1 & d0$country==`j`),]))}
+
+}
+
+```
+
+### Participants disposition diagram - combined
+
+```{r CHILDREN DISPOSITION DIAGRAM COMBINED}
+
+#diagram structure
+diag <- grViz(
+  "digraph {
+      
+      graph[splines = ortho, nodesep=3, color=black, fillcolor=black, dpi=70, ratio=auto]
+      node[fontname = Calibri, shape = box, fixedsize=T, width = 6, height = 4, fontsize=55, penwidth=1.7]
+      edge[arrowsize=1.8, color=black]
+        
+        #dummy
+        d1_1 [label = '', width = 0.01, height = 0.01] 
+        
+        #control labels (main)
+        r0_co [label = <<b>Control</b>>]
+        r1_co [label = 'Screened \n n=@@1-1']
+        d1_co [label = '', width = 0.01, height = 0.01] #dummy
+        r2_co [label = 'Recruited \n  n=@@1-2']
+        d2_co [label = '', width = 0.01, height = 0.01] #dummy
+        r3_co [label = 'Successful Day7 follow-up \n  n=@@3-1']
+        d3_co [label = '', width = 0.01, height = 0.01] #dummy
+        r4_co [label = 'Successful Day28 follow-up \n  n=@@3-2']
+
+        r1a_co [label ='Ineligible-child age n=@@5-1
+                        \\lIneligible-caregiver age n=@@5-2 
+                        \\lIneligible-trauma n=@@5-3
+                        \\lIneligible-immunization n=@@5-4
+                        \\lIneligible-routine monitoring n=@@5-5
+                        \\lIneligible-inpatient unit admission n=@@5-6 
+                        \\lIneligible-declined provide reason n=@@5-7 
+                        \\lIneligible-repeat visit n=@@5-8 
+                        \\lNot consented n=@@5-9']
+        r2a_co [label = 'Withdrawals before Day7 \n n=@@7-1']
+        r3a_co [label = 'Withdrawals before Day28 \n n=@@7-2']
+
+        #PO labels (main)
+        r0_po [label = <<b>PO</b>>]
+        r1_po [label = 'Screened \n n=@@2-1']
+        d1_po [label = '', width = 0.01, height = 0.01] #dummy
+        r2_po [label = 'Recruited \n n=@@2-2']
+        d2_po [label = '', width = 0.01, height = 0.01] #dummy
+        r3_po [label = 'Successful Day7 follow-up \n n=@@4-1']
+        d3_po [label = '', width = 0.01, height = 0.01] #dummy
+        r4_po [label = 'Successful Day28 follow-up \n n=@@4-2']
+
+        r1a_po [label = 'Ineligible-child age n=@@6-1 
+                        \\lIneligible-caregiver age n=@@6-2
+                        \\lIneligible-trauma n=@@6-3 
+                        \\lIneligible-immunization n=@@6-4
+                        \\lIneligible-routine monitoring n=@@6-5 
+                        \\lIneligible-inpatient unit admission n=@@6-6 
+                        \\lIneligible-declined provide reason n=@@6-7 
+                        \\lIneligible-repeat visit n=@@6-8 
+                        \\lNot consented n=@@6-9']
+        r2a_po [label = 'Withdrawals before Day7 \n n=@@8-1']
+        r3a_po [label = 'Withdrawals before Day28 \n n=@@8-2']
+        
+        #control
+        r0_co -> r1_co;
+        r1_co -> d1_co[dir = none];
+        d1_co -> r1a_co;
+        {rank=same; d1_co r1a_co}
+        d1_co -> r2_co;
+        r2_co -> d2_co[dir = none];
+        d2_co -> r2a_co;
+        {rank=same; d2_co r2a_co}
+        d2_co -> r3_co;
+        r3_co -> d3_co[dir = none];
+        d3_co -> r3a_co;
+        {rank=same; d3_co r3a_co}
+        d3_co -> r4_co;
+        
+        #PO
+        r0_po -> r1_po;
+        r1_po -> d1_po[dir = none];
+        d1_po -> r1a_po;
+        {rank=same; d1_po r1a_po}
+        d1_po -> r2_po;
+        r2_po -> d2_po[dir = none];
+        d2_po -> r2a_po;
+        {rank=same; d2_po r2a_po}
+        d2_po -> r3_po;
+        r3_po -> d3_po[dir = none];
+        d3_po -> r3a_po;
+        {rank=same; d3_po r3a_po}
+        d3_po -> r4_po;
+        
+       {rank=same; r0_co r0_po}
+    
+     }  
+        
+        
+      #add values  
+      [1]: c(n_sc_0, n_0) 
+      [2]: c(n_sc_1, n_1)  
+      [3]: c(n_fu7_0, n_fu28_0)
+      [4]: c(n_fu7_1, n_fu28_1) 
+      [5]: c(n_in1_0, n_in2_0, n_in3_0, n_in4_0, n_in5_0, n_in6_0, n_in7_0, n_in8_0, n_con_0) 
+      [6]: c(n_in1_1, n_in2_1, n_in3_1, n_in4_1, n_in5_1, n_in6_1, n_in7_1, n_in8_1, n_con_1) 
+      [7]: c(n_w7_0, n_w28_0)
+      [8]: c(n_w7_1, n_w28_1)
+
+ 
+     "
+)
+
+tmp1 <- export_svg(diag) #convert grViz to svg
+tmp1 <- charToRaw(tmp1) #flatten for exporting
+rsvg_png(tmp1, file.path(dir_out,"disposition.png"), width = 800, height = 900) #saving diagram
+
+```
+
+```{r, results='asis', eval=(params$log==F)}
+
+knitr::include_graphics(file.path(dir_out,"disposition.png"), dpi=700)
+
+```
+
+### Participants disposition diagram - India
+
+```{r CHILDREN DISPOSITION DIAGRAM INDIA}
+
+#diagram structure
+diag_in <- grViz(
+  "digraph {
+      
+      graph[splines = ortho, nodesep=3, color=black, fillcolor=black, dpi=70, ratio=auto]
+      node[fontname = Calibri, shape = box, fixedsize=T, width = 6, height = 4, fontsize=55, penwidth=1.7]
+      edge[arrowsize=1.8, color=black]
+        
+        #dummy
+        d1_1 [label = '', width = 0.01, height = 0.01] 
+        
+        #control labels (main)
+        r0_co [label = <<b>Control</b>>]
+        r1_co [label = 'Screened \n n=@@1-1']
+        d1_co [label = '', width = 0.01, height = 0.01] #dummy
+        r2_co [label = 'Recruited \n  n=@@1-2']
+        d2_co [label = '', width = 0.01, height = 0.01] #dummy
+        r3_co [label = 'Successful Day7 follow-up \n  n=@@3-1']
+        d3_co [label = '', width = 0.01, height = 0.01] #dummy
+        r4_co [label = 'Successful Day28 follow-up \n  n=@@3-2']
+
+        r1a_co [label ='Ineligible-child age n=@@5-1
+                        \\lIneligible-caregiver age n=@@5-2 
+                        \\lIneligible-trauma n=@@5-3
+                        \\lIneligible-immunization n=@@5-4
+                        \\lIneligible-routine monitoring n=@@5-5
+                        \\lIneligible-inpatient unit admission n=@@5-6 
+                        \\lIneligible-declined provide reason n=@@5-7 
+                        \\lIneligible-repeat visit n=@@5-8 
+                        \\lNot consented n=@@5-9']
+        r2a_co [label = 'Withdrawals before Day7 \n n=@@7-1']
+        r3a_co [label = 'Withdrawals before Day28 \n n=@@7-2']
+
+        #PO labels (main)
+        r0_po [label = <<b>PO</b>>]
+        r1_po [label = 'Screened \n n=@@2-1']
+        d1_po [label = '', width = 0.01, height = 0.01] #dummy
+        r2_po [label = 'Recruited \n n=@@2-2']
+        d2_po [label = '', width = 0.01, height = 0.01] #dummy
+        r3_po [label = 'Successful Day7 follow-up \n n=@@4-1']
+        d3_po [label = '', width = 0.01, height = 0.01] #dummy
+        r4_po [label = 'Successful Day28 follow-up \n n=@@4-2']
+
+        r1a_po [label = 'Ineligible-child age n=@@6-1 
+                        \\lIneligible-caregiver age n=@@6-2
+                        \\lIneligible-trauma n=@@6-3 
+                        \\lIneligible-immunization n=@@6-4
+                        \\lIneligible-routine monitoring n=@@6-5 
+                        \\lIneligible-inpatient unit admission n=@@6-6 
+                        \\lIneligible-declined provide reason n=@@6-7 
+                        \\lIneligible-repeat visit n=@@6-8 
+                        \\lNot consented n=@@6-9']
+        r2a_po [label = 'Withdrawals before Day7 \n n=@@8-1']
+        r3a_po [label = 'Withdrawals before Day28 \n n=@@8-2']
+        
+        #control
+        r0_co -> r1_co;
+        r1_co -> d1_co[dir = none];
+        d1_co -> r1a_co;
+        {rank=same; d1_co r1a_co}
+        d1_co -> r2_co;
+        r2_co -> d2_co[dir = none];
+        d2_co -> r2a_co;
+        {rank=same; d2_co r2a_co}
+        d2_co -> r3_co;
+        r3_co -> d3_co[dir = none];
+        d3_co -> r3a_co;
+        {rank=same; d3_co r3a_co}
+        d3_co -> r4_co;
+        
+        #PO
+        r0_po -> r1_po;
+        r1_po -> d1_po[dir = none];
+        d1_po -> r1a_po;
+        {rank=same; d1_po r1a_po}
+        d1_po -> r2_po;
+        r2_po -> d2_po[dir = none];
+        d2_po -> r2a_po;
+        {rank=same; d2_po r2a_po}
+        d2_po -> r3_po;
+        r3_po -> d3_po[dir = none];
+        d3_po -> r3a_po;
+        {rank=same; d3_po r3a_po}
+        d3_po -> r4_po;
+        
+       {rank=same; r0_co r0_po}
+    
+     }  
+        
+        
+      #add values  
+      [1]: c(n_sc_0_in, n_0_in) 
+      [2]: c(n_sc_1_in, n_1_in)  
+      [3]: c(n_fu7_0_in, n_fu28_0_in)
+      [4]: c(n_fu7_1_in, n_fu28_1_in) 
+      [5]: c(n_in1_0_in, n_in2_0_in, n_in3_0_in, n_in4_0_in, n_in5_0_in, n_in6_0_in, n_in7_0_in, n_in8_0_in, n_con_0_in) 
+      [6]: c(n_in1_1_in, n_in2_1_in, n_in3_1_in, n_in4_1_in, n_in5_1_in, n_in6_1_in, n_in7_1_in, n_in8_1_in, n_con_1_in) 
+      [7]: c(n_w7_0_in, n_w28_0_in)
+      [8]: c(n_w7_1_in, n_w28_1_in)
+
+ 
+     "
+)
+
+tmp1 <- export_svg(diag_in) #convert grViz to svg
+tmp1 <- charToRaw(tmp1) #flatten for exporting
+rsvg_png(tmp1, file.path(dir_out,"disposition_in.png"), width = 800, height = 900) #saving diagram
+
+```
+
+```{r, results='asis', eval=(params$log==F)}
+
+knitr::include_graphics(file.path(dir_out,"disposition_in.png"), dpi=700)
+
+```
+
+### Participants disposition diagram - Tanzania
+
+```{r CHILDREN DISPOSITION DIAGRAM TANZANIA}
+
+#diagram structure
+diag_tz <- grViz(
+  "digraph {
+      
+      graph[splines = ortho, nodesep=3, color=black, fillcolor=black, dpi=70, ratio=auto]
+      node[fontname = Calibri, shape = box, fixedsize=T, width = 6, height = 4, fontsize=55, penwidth=1.7]
+      edge[arrowsize=1.8, color=black]
+        
+        #dummy
+        d1_1 [label = '', width = 0.01, height = 0.01] 
+        
+        #control labels (main)
+        r0_co [label = <<b>Control</b>>]
+        r1_co [label = 'Screened \n n=@@1-1']
+        d1_co [label = '', width = 0.01, height = 0.01] #dummy
+        r2_co [label = 'Recruited \n  n=@@1-2']
+        d2_co [label = '', width = 0.01, height = 0.01] #dummy
+        r3_co [label = 'Successful Day7 follow-up \n  n=@@4-1']
+        d3_co [label = '', width = 0.01, height = 0.01] #dummy
+        r4_co [label = 'Successful Day28 follow-up \n  n=@@4-2']
+
+        r1a_co [label ='Ineligible-child age n=@@7-1
+                        \\lIneligible-caregiver age n=@@7-2 
+                        \\lIneligible-trauma n=@@7-3
+                        \\lIneligible-immunization n=@@7-4
+                        \\lIneligible-routine monitoring n=@@7-5
+                        \\lIneligible-inpatient unit admission n=@@7-6 
+                        \\lIneligible-declined provide reason n=@@7-7 
+                        \\lIneligible-repeat visit n=@@7-8 
+                        \\lNot consented n=@@7-9']
+        r2a_co [label = 'Withdrawals before Day7 \n n=@@10-1']
+        r3a_co [label = 'Withdrawals before Day28 \n n=@@10-2']
+
+        #PO labels (main)
+        r0_po [label = <<b>PO</b>>]
+        r1_po [label = 'Screened \n n=@@2-1']
+        d1_po [label = '', width = 0.01, height = 0.01] #dummy
+        r2_po [label = 'Recruited \n n=@@2-2']
+        d2_po [label = '', width = 0.01, height = 0.01] #dummy
+        r3_po [label = 'Successful Day7 follow-up \n n=@@5-1']
+        d3_po [label = '', width = 0.01, height = 0.01] #dummy
+        r4_po [label = 'Successful Day28 follow-up \n n=@@5-2']
+
+        r1a_po [label = 'Ineligible-child age n=@@8-1 
+                        \\lIneligible-caregiver age n=@@8-2
+                        \\lIneligible-trauma n=@@8-3 
+                        \\lIneligible-immunization n=@@8-4
+                        \\lIneligible-routine monitoring n=@@8-5 
+                        \\lIneligible-inpatient unit admission n=@@8-6 
+                        \\lIneligible-declined provide reason n=@@8-7 
+                        \\lIneligible-repeat visit n=@@8-8 
+                        \\lNot consented n=@@8-9']
+        r2a_po [label = 'Withdrawals before Day7 \n n=@@11-1']
+        r3a_po [label = 'Withdrawals before Day28 \n n=@@11-2']
+        
+        #PO+CDSA labels (main)
+        r0_pc [label = <<b>PO+CDSA</b>>]
+        r1_pc [label = 'Screened \n n=@@3-1']
+        d1_pc [label = '', width = 0.01, height = 0.01] #dummy
+        r2_pc [label = 'Recruited \n n=@@3-2']
+        d2_pc [label = '', width = 0.01, height = 0.01] #dummy
+        r3_pc [label = 'Successful Day7 follow-up \n n=@@6-1']
+        d3_pc [label = '', width = 0.01, height = 0.01] #dummy
+        r4_pc [label = 'Successful Day28 follow-up \n n=@@6-2']
+
+        r1a_pc [label = 'Ineligible-child age n=@@9-1 
+                        \\lIneligible-caregiver age n=@@9-2
+                        \\lIneligible-trauma n=@@9-3 
+                        \\lIneligible-immunization n=@@9-4
+                        \\lIneligible-routine monitoring n=@@9-5 
+                        \\lIneligible-inpatient unit admission n=@@9-6 
+                        \\lIneligible-declined provide reason n=@@9-7 
+                        \\lIneligible-repeat visit n=@@9-8 
+                        \\lNot consented n=@@9-9']
+        r2a_pc [label = 'Withdrawals before Day7 \n n=@@12-1']
+        r3a_pc [label = 'Withdrawals before Day28 \n n=@@12-2']
+        
+        #control
+        r0_co -> r1_co;
+        r1_co -> d1_co[dir = none];
+        d1_co -> r1a_co;
+        {rank=same; d1_co r1a_co}
+        d1_co -> r2_co;
+        r2_co -> d2_co[dir = none];
+        d2_co -> r2a_co;
+        {rank=same; d2_co r2a_co}
+        d2_co -> r3_co;
+        r3_co -> d3_co[dir = none];
+        d3_co -> r3a_co;
+        {rank=same; d3_co r3a_co}
+        d3_co -> r4_co;
+        
+        #PO
+        r0_po -> r1_po;
+        r1_po -> d1_po[dir = none];
+        d1_po -> r1a_po;
+        {rank=same; d1_po r1a_po}
+        d1_po -> r2_po;
+        r2_po -> d2_po[dir = none];
+        d2_po -> r2a_po;
+        {rank=same; d2_po r2a_po}
+        d2_po -> r3_po;
+        r3_po -> d3_po[dir = none];
+        d3_po -> r3a_po;
+        {rank=same; d3_po r3a_po}
+        d3_po -> r4_po;
+        
+        #PO+CDSA
+        r0_pc -> r1_pc;
+        r1_pc -> d1_pc[dir = none];
+        d1_pc -> r1a_pc;
+        {rank=same; d1_pc r1a_pc}
+        d1_pc -> r2_pc;
+        r2_pc -> d2_pc[dir = none];
+        d2_pc -> r2a_pc;
+        {rank=same; d2_pc r2a_pc}
+        d2_pc -> r3_pc;
+        r3_pc -> d3_pc[dir = none];
+        d3_pc -> r3a_pc;
+        {rank=same; d3_pc r3a_pc}
+        d3_pc -> r4_pc;
+        
+       {rank=same; r0_co r0_po r0_pc}
+    
+     }  
+        
+        
+      #add values  
+      [1]: c(n_sc_0_tz, n_0_tz) 
+      [2]: c(n_sc_1_tz, n_1_tz)  
+      [3]: c(n_sc_2_tz, n_2_tz) 
+      [4]: c(n_fu7_0_tz, n_fu28_0_tz)
+      [5]: c(n_fu7_1_tz, n_fu28_1_tz) 
+      [6]: c(n_fu7_2_tz, n_fu28_2_tz) 
+      [7]: c(n_in1_0_tz, n_in2_0_tz, n_in3_0_tz, n_in4_0_tz, n_in5_0_tz, n_in6_0_tz, n_in7_0_tz, n_in8_0_tz, n_con_0_tz) 
+      [8]: c(n_in1_1_tz, n_in2_1_tz, n_in3_1_tz, n_in4_1_tz, n_in5_1_tz, n_in6_1_tz, n_in7_1_tz, n_in8_1_tz, n_con_1_tz) 
+      [9]: c(n_in1_2_tz, n_in2_2_tz, n_in3_2_tz, n_in4_2_tz, n_in5_2_tz, n_in6_2_tz, n_in7_2_tz, n_in8_2_tz, n_con_2_tz) 
+      [10]: c(n_w7_0_tz, n_w28_0_tz)
+      [11]: c(n_w7_1_tz, n_w28_1_tz)
+      [12]: c(n_w7_2_tz, n_w28_2_tz)
+
+     "
+)
+
+tmp1 <- export_svg(diag_tz) #convert grViz to svg
+tmp1 <- charToRaw(tmp1) #flatten for exporting
+rsvg_png(tmp1, file.path(dir_out,"disposition_tz.png"), width = 800, height = 900) #saving diagram
+
+```
+
+```{r, results='asis', eval=(params$log==F)}
+
+knitr::include_graphics(file.path(dir_out,"disposition_tz.png"), dpi=700)
+
+```
+
+
+\newpage
+### Eligibility and recruitment summary
+
+```{r RECRUITMENT SUMMARY}
+
+## % eligible
+#frequencies
+fr_el <- table(scrn$country[which(scrn$eligible==1)], scrn$intervention[which(scrn$eligible==1)])
+fr_el <- rbind(margin.table(fr_el, 2), fr_el)
+  
+#totals
+num_el <- table(scrn$country, scrn$intervention)
+num_el <- rbind(margin.table(num_el, 2), num_el)
+ 
+## % recruited
+#frequencies
+fr_re <- table(scrn$country[which(scrn$eligible==1 & scrn$consent==1)], scrn$intervention[which(scrn$eligible==1 & scrn$consent==1)])
+fr_re <- rbind(margin.table(fr_re, 2), fr_re)
+  
+#totals
+num_re <- table(scrn$country[which(scrn$eligible==1)], scrn$intervention[which(scrn$eligible==1)])
+num_re <- rbind(margin.table(num_re, 2), num_re)
+
+##combine data for table 
+sum.tab_el <- data.frame("Control"="", "PO"="", "PO+CDSA"="")
+sum.tab_re <- data.frame("Control"="", "PO"="", "PO+CDSA"="")
+  for(j in 1:nrow(fr_el)){
+        #calculate percentages
+        perc_el <- paste(formatC(round(fr_el[j,]/num_el[j,]*100, 1), format="f", 1), "%", sep="")
+        perc_re <- paste(formatC(round(fr_re[j,]/num_re[j,]*100, 1), format="f", 1), "%", sep="")
+        
+        #combine frequency and totals
+        fr_n_el <- paste("[", fr_el[j,], "/", num_el[j,], "]", sep="")
+        fr_n_re <- paste("[", fr_re[j,], "/", num_re[j,], "]", sep="")
+        
+        #combine all summaries
+        sum.tab_el[j+1,] <- paste(perc_el, fr_n_el) 
+        sum.tab_re[j+1,] <- paste(perc_re, fr_n_re) 
+       }
+  
+##Combine summaries together
+rec.tab <- rbind(sum.tab_el, sum.tab_re)
+
+#add row names
+rec.tab <- cbind(c("% eligible children (eligible/screened)", "Combined", "India", "Tanzania", "% recruited children (recruited/eligible)", "Combined", "India", "Tanzania"), rec.tab)
+  
+#replace empty first col names
+names(rec.tab)[1] <- ""
+
+#replace with "-" CDSA for India and combined
+rec.tab[which(rec.tab[,1]%in%c("India","Combined")), ncol(rec.tab)] <- "-"
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(rec.tab) 
+
+```
+
+
+```{r RECRUITING FACILITIES}
+
+##combined
+fac_sum <- as_labelled(d0[which(!duplicated(d0$fid) & d0$intervention!=2), c("fid", "lvl2", "type_der", "category", "intervention","country")])
+tab_0 <- table(d0$fid[which(d0$intervention!=2 & d0$type_der==0)], d0$intervention[which(d0$intervention!=2 & d0$type_der==0)])[,c(1,2)] #summary of recruitment by facility and arm
+tab_1 <- table(d0$fid[which(d0$intervention!=2 & d0$type_der==1)], d0$intervention[which(d0$intervention!=2 & d0$type_der==1)])[,c(1,2)] #summary of recruitment by facility and arm
+tot <- as.data.frame(rbind(table(d0$lvl2, d0$intervention)[,1:2], table(d0$category, d0$intervention)[,1:2], table(d0$type_der, d0$intervention)[,1:2])) #number of children in each category by arm
+
+sum_tab <- bs.sum(fac_sum[, c("lvl2", "category", "type_der")], set_labels(factor(fac_sum$intervention), labels=c("Control", "PO")), names=c("District", "Location", "Type"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F)
+sum_tab <- rbind(sum_tab, c("Number children per PHC/Dispensary", "Median, min-max", paste0(median(tab_0[tab_0[,1]>0,1]), ", ", min(tab_0[tab_0[,1]>0,1]), "-", max(tab_0[tab_0[,1]>0,1])), paste0(median(tab_0[tab_0[,2]>0,2]), ", ", min(tab_0[tab_0[,2]>0,2]), "-", max(tab_0[tab_0[,2]>0,2])) )) #median, min-max 
+sum_tab <- rbind(sum_tab, c("Number children per CHC/Health center", "Median, min-max", paste0(median(tab_1[tab_1[,1]>0,1]), ", ", min(tab_1[tab_1[,1]>0,1]), "-", max(tab_1[tab_1[,1]>0,1])), paste0(median(tab_1[tab_1[,2]>0,2]), ", ", min(tab_1[tab_1[,2]>0,2]), "-", max(tab_1[tab_1[,2]>0,2])) )) #median, min-max  
+sum_tab[sum_tab[,2]==0,2] <- "PHC/Dispensary"; sum_tab[sum_tab[,2]==1,2] <- "CHC/Health center"
+
+sum_tab_tot <- bs.sum(d0[which(d0$intervention!=2), c("lvl2", "category", "type_der")], set_labels(factor(d0$intervention[which(d0$intervention!=2)]), labels=c("Control", "PO")), names=c("District", "Location", "Type"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F)
+sum_tab_tot[sum_tab_tot[,2]==0,2] <- "PHC/Dispensary"; sum_tab_tot[sum_tab_tot[,2]==1,2] <- "CHC/Health center"
+
+##India
+fac_sum_in <- as_labelled(d0[which(!duplicated(d0$fid) & d0$country=="in"), c("fid", "lvl2", "type", "category", "intervention","country")])
+tab_in_0 <- table(d0$fid[which(d0$country=="in" & d0$type=="PHC")], d0$intervention[which(d0$country=="in" & d0$type=="PHC")])[,c(1,2)] #summary of recruitment by facility and arm
+tab_in_1 <- table(d0$fid[which(d0$country=="in" & d0$type=="CHC")], d0$intervention[which(d0$country=="in" & d0$type=="CHC")])[,c(1,2)] #summary of recruitment by facility and arm
+
+sum_tab_in <- bs.sum(fac_sum_in[, c("lvl2", "type", "category")], set_labels(factor(fac_sum_in$intervention), labels=c("Control", "PO")), names=c("District","Type", "Location"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F) 
+sum_tab_in <- rbind(sum_tab_in, c("Number children per PHC", "Median, min-max",paste0(median(tab_in_0[tab_in_0[,1]>0,1]), ", ", min(tab_in_0[tab_in_0[,1]>0,1]), "-", max(tab_in_0[tab_in_0[,1]>0,1])), paste0(median(tab_in_0[tab_in_0[,2]>0,2]), ", ", min(tab_in_0[tab_in_0[,2]>0,2]), "-", max(tab_in_0[tab_in_0[,2]>0,2])) )) #median, min-max 
+sum_tab_in <- rbind(sum_tab_in, c("Number children per CHC", "Median, min-max",paste0(median(tab_in_1[tab_in_1[,1]>0,1]), ", ", min(tab_in_1[tab_in_1[,1]>0,1]), "-", max(tab_in_1[tab_in_1[,1]>0,1])), paste0(median(tab_in_1[tab_in_1[,2]>0,2]), ", ", min(tab_in_1[tab_in_1[,2]>0,2]), "-", max(tab_in_1[tab_in_1[,2]>0,2])) )) #median, min-max 
+
+sum_tab_tot_in <- bs.sum(d0[which(d0$intervention!=2 & d0$country=="in"), c("lvl2", "category", "type")], set_labels(factor(d0$intervention[which(d0$intervention!=2 & d0$country=="in")]), labels=c("Control", "PO")), names=c("District", "Location", "Type"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F)
+
+##Tanzania
+fac_sum_tz <- as_labelled(d0[which(!duplicated(d0$fid) & d0$country=="tz"), c("fid", "lvl2", "type", "category", "intervention","country")])
+tab_tz_0 <- table(d0$fid[which(d0$country=="tz" & d0$type=="dispensary")], d0$intervention[which(d0$country=="tz" & d0$type=="dispensary")]) #summary of recruitment by facility and arm
+tab_tz_1 <- table(d0$fid[which(d0$country=="tz" & d0$type=="health center")], d0$intervention[which(d0$country=="tz" & d0$type=="health center")]) #summary of recruitment by facility and arm
+
+sum_tab_tz <- bs.sum(fac_sum_tz[, c("lvl2", "type", "category")], set_labels(factor(fac_sum_tz$intervention), labels=c("Control", "PO", "PO+CDSA")), names=c("District","Type", "Location"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F)
+sum_tab_tz <- rbind(sum_tab_tz, c("Number children per dispensary", "Median, min-max", paste0(median(tab_tz_0[tab_tz_0[,1]>0,1]), ", ", min(tab_tz_0[tab_tz_0[,1]>0,1]), "-", max(tab_tz_0[tab_tz_0[,1]>0,1])), paste0(median(tab_tz_0[tab_tz_0[,2]>0,2]), ", ", min(tab_tz_0[tab_tz_0[,2]>0,2]), "-", max(tab_tz_0[tab_tz_0[,2]>0,2])), paste0(median(tab_tz_0[tab_tz_0[,3]>0,3]), ", ", min(tab_tz_0[tab_tz_0[,3]>0,3]), "-", max(tab_tz_0[tab_tz_0[,3]>0,3])) )) #median, min-max 
+sum_tab_tz <- rbind(sum_tab_tz, c("Number children per health center", "Median, min-max", paste0(median(tab_tz_1[tab_tz_1[,1]>0,1]), ", ", min(tab_tz_1[tab_tz_1[,1]>0,1]), "-", max(tab_tz_1[tab_tz_1[,1]>0,1])), paste0(median(tab_tz_1[tab_tz_1[,2]>0,2]), ", ", min(tab_tz_1[tab_tz_1[,2]>0,2]), "-", max(tab_tz_1[tab_tz_1[,2]>0,2])), paste0(median(tab_tz_1[tab_tz_1[,3]>0,3]), ", ", min(tab_tz_1[tab_tz_1[,3]>0,3]), "-", max(tab_tz_1[tab_tz_1[,3]>0,3])) )) #median, min-max 
+
+sum_tab_tot_tz <- bs.sum(d0[which(d0$country=="tz"), c("lvl2", "category", "type")], set_labels(factor(d0$intervention[which(d0$country=="tz")]), labels=c("Control", "PO", "PO+CDSA")), names=c("District", "Location", "Type"), med.c=T, mean.c=F, minmax.c=F, tot=F, dig=F)
+
+
+```
+
+### Characteristics of recruiting facilities
+
+```{r, results='asis'}
+
+knitr::kable(sum_tab) 
+
+```
+
+### Distribution of children by characteristics of recruiting facilities
+
+```{r, results='asis'}
+
+knitr::kable(sum_tab_tot) 
+
+```
+
+### Characteristics of recruiting facilities - India
+
+```{r, results='asis'}
+
+knitr::kable(sum_tab_in) 
+
+```
+
+
+### Distribution of children by characteristics of recruiting facilities - India
+
+```{r, results='asis'}
+
+knitr::kable(sum_tab_tot_in) 
+
+```
+
+### Characteristics of recruiting facilities - Tanzania
+
+```{r, results='asis'}
+
+knitr::kable(sum_tab_tz) 
+
+```
+
+
+### Distribution of children by characteristics of recruiting facilities - Tanzania
+
+```{r, results='asis'}
+
+knitr::kable(sum_tab_tot_tz) 
+
+```
+
+
+### Monthly and cumulative recruitment
+
+```{r MONTHLY AND CUMULATIVE RECRUITMENT,  fig.height = 11, fig.width = 9}
+
+##months between start and end of recruitment (keep only year and month without day, round if necessary)
+pseudo.dt <- substr(seq(min(d0$date_visit), max(d0$date_visit), 30), 1, 7)
+if(pseudo.dt[length(pseudo.dt)]!=substr(max(d0$date_visit),1,7)){pseudo.dt <- c(pseudo.dt, substr(max(d0$date_visit),1,7))}
+pseudo.dt_in <- substr(seq(min(d0$date_visit[which(d0$country=="in")]), max(d0$date_visit[which(d0$country=="in")]), 30), 1, 7)
+if(pseudo.dt_in[length(pseudo.dt_in)]!=substr(max(d0$date_visit[which(d0$country=="in")]),1,7)){pseudo.dt_in <- c(pseudo.dt_in, substr(max(d0$date_visit[which(d0$country=="in")]),1,7))}
+pseudo.dt_tz <- substr(seq(min(d0$date_visit[which(d0$country=="tz")]), max(d0$date_visit[which(d0$country=="tz")]), 30), 1, 7)
+if(pseudo.dt_tz[length(pseudo.dt_tz)]!=substr(max(d0$date_visit[which(d0$country=="tz")]),1,7)){pseudo.dt_tz <- c(pseudo.dt_tz, substr(max(d0$date_visit[which(d0$country=="tz")]),1,7))}
+
+##count children recruited each month
+mnth <- table(c(substr(d0$date_visit, 1, 7),pseudo.dt))-1
+mnth_in <- table(c(substr(d0$date_visit[which(d0$country=="in")], 1, 7), pseudo.dt_in))-1
+mnth_tz <- table(c(substr(d0$date_visit[which(d0$country=="tz")], 1, 7), pseudo.dt_tz))-1
+ 
+##Cumulative recruitment
+cumrec <- cumsum(mnth)  
+cumrec_in <- cumsum(mnth_in) 
+cumrec_tz <- cumsum(mnth_tz) 
+
+##### Graph
+# Setting up the graph
+par(oma = c(1, 0, 0, 0), mar=c(10,7,2,7), mfrow=c(3,1))
+
+#### cross-country
+#monthly
+barplot(mnth, xlim=c(0, length(mnth)), col="lightblue", ylim=c(0, 18000), xaxt="n", yaxt="n", space=0, main="Combined", cex.main = 2) 
+axis(side=2, seq(0, 18000, 1800), seq(0, 18000, 1800), las=2, cex.axis=1.5)
+mtext(side=2,"Monthly Recruitment", line=9, padj=4, cex=1.2)
+
+par(new=TRUE)
+
+#cumulative
+plot(cumrec,lwd=3,typ="o", xlim=c(0.5, length(mnth)+0.5), ylim=c(0, 158000), col="blue",yaxt="n", xaxt="n", ylab="", xlab="", pch=16) 
+axis(side=4, at=seq(0, 158000, by=15800), las=2, cex.axis=1.5)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth)+0.5), label=pseudo.dt, cex.axis=1.2, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+
+#### India
+#monthly
+barplot(mnth_in, xlim=c(0, length(mnth_in)), col="lightblue", ylim=c(0, 7000), xaxt="n", yaxt="n", space=0, main="India", cex.main=2) 
+axis(side=2, seq(0, 7000, 700), seq(0, 7000, 700), las=2, cex.axis=1.5)
+mtext(side=2,"Monthly Recruitment", line=9, padj=4, cex=1.2)
+
+par(new=TRUE)
+
+#cumulative
+plot(cumrec_in,lwd=3,typ="o", xlim=c(0.5, length(mnth_in)+0.5), ylim=c(0, 50000), col="blue",yaxt="n", xaxt="n", ylab="", xlab="", pch=16) 
+axis(side=4, at=seq(0, 50000, by=5000), las=2, cex.axis=1.5)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_in)+0.5), label=pseudo.dt_in, cex.axis=1.2, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+
+#### Tanzania
+#monthly
+barplot(mnth_tz, xlim=c(0, length(mnth_tz)), col="lightblue", ylim=c(0, 10300), xaxt="n", yaxt="n", space=0, main="Tanzania", cex.main=2) 
+axis(side=2, seq(0, 10300, 1030), seq(0, 10300, 1030), las=2, cex.axis=1.5)
+mtext(side=2,"Monthly Recruitment", line=9, padj=4, cex=1.2)
+
+par(new=TRUE)
+
+#cumulative
+plot(cumrec_tz,lwd=3,typ="o", xlim=c(0.5, length(mnth_tz)+0.5), ylim=c(0, 110000), col="blue",yaxt="n", xaxt="n", ylab="", xlab="", pch=16) 
+axis(side=4, at=seq(0, 110000, by=11000), las=2, cex.axis=1.5)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_tz)+0.5), label=pseudo.dt_tz, cex.axis=1.2, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+
+# Legend
+par(xpd=TRUE)
+legend(x="bottom", inset=-0.6, legend=c("Monthly Recruitment","Cumulative Recruitment"),lwd=5,
+         lty=c(NA,1), pch=c(15,NA), col=c("lightblue", "blue"), bty="n",cex=1.4, horiz = TRUE)
+
+```
+
+### Cumulative recruitment by facility districts
+
+```{r CUMULATIVE RECRUITMENT BY FACILITY DISTRICT,  fig.height = 11, fig.width = 9}
+
+##count children recruited each month
+#India
+mnth_county_in <- list(); cumrec_county_in <- list()
+list_in <- unique(d0$lvl2[which(d0$country=="in")])
+for(i in 1:length(list_in)){
+ mnth_county_in[[i]] <- table(c(substr(d0$date_visit[which(d0$lvl2==list_in[i])], 1, 7), pseudo.dt_in))-1
+ cumrec_county_in[[i]] <- cumsum(mnth_county_in[[i]])
+}
+#Tanzania
+mnth_district_tz <- list(); cumrec_district_tz <- list()
+list_tz <- unique(d0$lvl2[which(d0$country=="tz")])
+for(i in 1:length(list_tz)){
+ mnth_district_tz[[i]] <- table(c(substr(d0$date_visit[which(d0$lvl2==list_tz[i])], 1, 7), pseudo.dt_tz))-1
+ cumrec_district_tz[[i]] <- cumsum(mnth_district_tz[[i]])
+}
+
+##### Graph
+# Setting up the graph
+par(oma = c(1, 0, 0, 0), mar=c(10,2,2,6), mfrow=c(2,1))
+colors <- rainbow(length(list_in)+length(list_tz))
+
+#### India
+plot(cumrec_county_in[[1]],lwd=2, typ="o", xlim=c(0.5, length(mnth_in)+0.5), ylim=c(0, 20000), col=colors[1], yaxt="n", xaxt="n", ylab="", xlab="", pch=20, main="India - by district", cex.main=1.2) 
+
+for(j in 2:length(list_in)){
+  lines(cumrec_county_in[[j]], lwd=2, typ="o", pch=20, col=colors[j])
+}
+
+axis(side=4, at=seq(0, 20000, by=2000), las=2, cex.axis=1.3)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_in)+0.5), label=pseudo.dt_in, cex.axis=1.1, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+par(xpd=TRUE)
+legend(x="bottom", inset=-0.6, legend=list_in, lwd=3, col=colors[1:length(list_in)], bty="n", cex=1.1, horiz = TRUE)
+
+#### Tanzania
+plot(cumrec_district_tz[[1]],lwd=2, typ="o", xlim=c(0.5, length(mnth_tz)+0.5), ylim=c(0, 42000), col=colors[1+length(list_tz)], yaxt="n", xaxt="n", ylab="", xlab="", pch=20, main="Tanzania - by district", cex.main=1.3) 
+
+for(j in 2:length(list_tz)){
+  lines(cumrec_district_tz[[j]], lwd=2, typ="o", pch=20, col=colors[j+length(list_tz)])
+}
+
+axis(side=4, at=seq(0, 42000, by=4200), las=2, cex.axis=1.3)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_tz)+0.5), label=pseudo.dt_tz, cex.axis=1.1, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+par(xpd=TRUE)
+legend(x="bottom", inset=-0.6, legend=list_tz, lwd=4, col=colors[1+length(list_tz):length(colors)], bty="n",cex=1.1, horiz = TRUE)
+
+```
+
+### Cumulative recruitment by facility type
+
+```{r CUMULATIVE RECRUITMENT BY FACILITY TYPE,  fig.height = 11, fig.width = 9}
+
+##count children recruited each month
+#India
+mnth_type_in <- list(); cumrec_type_in <- list()
+list_type_in <- unique(d0$type[which(d0$country=="in")])
+for(i in 1:length(list_type_in)){
+ mnth_type_in[[i]] <- table(c(substr(d0$date_visit[which(d0$type==list_type_in[i])], 1, 7), pseudo.dt_in))-1
+ cumrec_type_in[[i]] <- cumsum(mnth_type_in[[i]])
+}
+#Tanzania
+mnth_type_tz <- list(); cumrec_type_tz <- list()
+list_type_tz <- unique(d0$type[which(d0$country=="tz")])
+for(i in 1:length(list_type_tz)){
+ mnth_type_tz[[i]] <- table(c(substr(d0$date_visit[which(d0$type==list_type_tz[i])], 1, 7), pseudo.dt_tz))-1
+ cumrec_type_tz[[i]] <- cumsum(mnth_type_tz[[i]])
+}
+
+##### Graph
+# Setting up the graph
+par(oma = c(1, 0, 0, 0), mar=c(10,2,2,6), mfrow=c(2,1))
+colors <- rainbow(length(list_type_in)+length(list_type_tz))
+
+#### India
+plot(cumrec_type_in[[1]],lwd=2, typ="o", xlim=c(0.5, length(mnth_in)+0.5), ylim=c(0, 35000), col=colors[1], yaxt="n", xaxt="n", ylab="", xlab="", pch=20, main="India - by facility type", cex.main=1.2) 
+
+for(j in 2:length(list_type_in)){
+  lines(cumrec_type_in[[j]], lwd=2, typ="o", pch=20, col=colors[j])
+}
+
+axis(side=4, at=seq(0, 35000, by=3500), las=2, cex.axis=1.3)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_in)+0.5), label=pseudo.dt_in, cex.axis=1.1, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+par(xpd=TRUE)
+legend(x="bottom", inset=-0.6, legend=list_type_in, lwd=3, col=colors[1:length(list_in)], bty="n",cex=1.1, horiz = TRUE)
+
+#### Tanzania
+plot(cumrec_type_tz[[1]],lwd=2, typ="o", xlim=c(0.5, length(mnth_tz)+0.5), ylim=c(0, 70000), col=colors[1+length(list_type_tz)], yaxt="n", xaxt="n", ylab="", xlab="", pch=20, main="Tanzania - by facility type", cex.main=1.2) 
+
+for(j in 2:length(list_type_tz)){
+  lines(cumrec_type_tz[[j]], lwd=2, typ="o", pch=20, col=colors[j+length(list_type_tz)])
+}
+
+axis(side=4, at=seq(0, 70000, by=7000), las=2, cex.axis=1.3)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_tz)+0.5), label=pseudo.dt_tz, cex.axis=1.1, las=2)
+mtext(side=1,"Months", line=6, cex=1.2)
+
+par(xpd=TRUE)
+legend(x="bottom", inset=-0.6, legend=list_type_tz, lwd=3, col=colors[1+length(list_type_tz):length(colors)], bty="n",cex=1.1, horiz = TRUE)
+
+```
+
+### Cumulative recruitment by facility location
+
+```{r CUMULATIVE RECRUITMENT BY LOCATION,  fig.height = 11, fig.width = 9}
+
+##count children recruited each month
+#India
+mnth_loc_in <- list(); cumrec_loc_in <- list()
+list_loc_in <- unique(d0$category[which(d0$country=="in")])
+for(i in 1:length(list_loc_in)){
+ mnth_loc_in[[i]] <- table(c(substr(d0$date_visit[which(d0$category==list_loc_in[i] & d0$country=="in")], 1, 7), pseudo.dt_in))-1
+ cumrec_loc_in[[i]] <- cumsum(mnth_loc_in[[i]])
+}
+#Tanzania
+mnth_loc_tz <- list(); cumrec_loc_tz <- list()
+list_loc_tz <- unique(d0$category[which(d0$country=="tz")])
+for(i in 1:length(list_loc_tz)){
+ mnth_loc_tz[[i]] <- table(c(substr(d0$date_visit[which(d0$category==list_loc_tz[i]  & d0$country=="tz")], 1, 7), pseudo.dt_tz))-1
+ cumrec_loc_tz[[i]] <- cumsum(mnth_loc_tz[[i]])
+}
+
+##### Graph
+# Setting up the graph
+par(oma = c(1, 0, 0, 0), mar=c(10,2,2,6), mfrow=c(2,1))
+colors <- rainbow(length(list_loc_tz))
+
+#### India
+plot(cumrec_loc_in[[1]],lwd=2, typ="o", xlim=c(0.5, length(mnth_in)+0.5), ylim=c(0, 50000), col=colors[1], yaxt="n", xaxt="n", ylab="", xlab="", pch=20, main="India - by location", cex.main=1.2) 
+
+axis(side=4, at=seq(0, 50000, by=5000), las=2, cex.axis=1.3)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_in)+0.5), label=pseudo.dt_in, cex.axis=1.1, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+par(xpd=TRUE)
+legend(x="bottom", inset=-0.6, legend=list_loc_in, lwd=3, col=colors[1], bty="n",cex=1.1, horiz = TRUE)
+
+#### Tanzania
+plot(cumrec_loc_tz[[1]],lwd=2, typ="o", xlim=c(0.5, length(mnth_tz)+0.5), ylim=c(0, 72000), col=colors[1], yaxt="n", xaxt="n", ylab="", xlab="", pch=20, main="Tanzania - by location", cex.main=1.2) 
+
+for(j in 2:length(list_loc_tz)){
+  lines(cumrec_loc_tz[[j]], lwd=2, typ="o", pch=20, col=colors[j])
+}
+
+axis(side=4, at=seq(0, 72000, by=7200), las=2, cex.axis=1.3)
+mtext(side=4, "Cumulative Recruitment", padj=4, cex=1.2, line=1)
+axis(side = 1, at=c(0.5:length(mnth_tz)+0.5), label=pseudo.dt_tz, cex.axis=1.1, las=2)
+mtext(side=1,"Months", line=6, cex=1.3)
+
+par(xpd=TRUE)
+legend(x="bottom", inset=-0.6, legend=list_loc_tz, lwd=2, col=colors, bty="n",cex=1.1, horiz = TRUE)
+
+```

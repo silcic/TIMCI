@@ -1,0 +1,249 @@
+
+\newpage
+
+# Health, hospitalisation and referral secondary outcomes
+
+```{r, include=params$log}
+###
+# study name: TIMCI
+# program name: hos_ref_out.Rmd  
+# program purpose: Health, hospitalisation and referral outcomes 
+# author: Silvia Cicconi  
+###
+```
+
+## Proportion of children with a severe complication by Day7
+
+Severe complication is defined as death or secondary hospitalisation. For the primary analysis, secondary hospitalisation refers to any delayed hospitalisation (occurring at any point greater than 24 hours after Day0 consultation) and any hospitalisation occurring without a referral. A child is considered admitted to hospital within 24 hours of Day0 if the date of hospitalisation is the same as Day0 date or is one day after Day0 date.
+
+### Severe complication by Day7 summary - primary analysis
+
+```{r SEVERE COMPLICATION BY DAY 7}
+
+##Proportion of severe complication by Day 7
+tab_comp_d7 <- sum.tab(d0, "sev_comp_d7", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_comp_d7, row.names = F) 
+
+```
+
+Sensitivity analyses are performed considering different cut-offs for the definition of delayed hospitalisations. Instead of 24 hours after Day consultation same day, 3 days and 7 days will be used. 
+
+### Severe complication by Day7 summary - sensitivity analysis (delayed hospitalisation cut-off same day of Day0)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES1}
+
+tab_sev_comp_d7_sa1 <- sum.tab(d0, "sev_comp_d7_sa1", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa1, row.names = F) 
+
+```
+
+### Severe complication by Day7 summary - sensitivity analysis (delayed hospitalisation cut-off 3 days after Day0)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES2}
+
+tab_sev_comp_d7_sa2 <- sum.tab(d0, "sev_comp_d7_sa2", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa2, row.names = F) 
+
+```
+
+### Severe complication by Day7 summary - sensitivity analysis (delayed hospitalisation cut-off 7 days after Day0)
+
+```{r SEVERE COMPLICATIONS-SENSITIVITY ANALYSES}
+
+tab_sev_comp_d7_sa3 <- sum.tab(d0, "sev_comp_d7_sa3", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_sev_comp_d7_sa3, row.names = F) 
+
+```
+
+## Proportion of children admitted to hospital within 24 hours of Day0 consultation and as a result of a referral ('Appropriate referral')
+
+For the primary analysis, a child is considered admitted to hospital within 24 hours of Day0 if the date of hospitalisation is the same as Day0 date or is one day after Day0 date. Proportions are presented using both all children recruited and only children who were referred as denominator.
+
+### 'Appropriate referral' summary - primary analysis
+
+```{r PRIMARY HOSPITALISATION}
+
+tab_pr_hos <- sum.tab(d0, "pr_hos", "pre_post") #all children
+tab_pr_hos.1 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos", "pre_post") #only referred
+
+#combine
+tab_pr_hos <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos)-1))), tab_pr_hos), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1)-1))), tab_pr_hos.1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos, row.names = F) 
+
+```
+
+Sensitivity analyses are performed considering different cut-offs for the definition appropriate hospitalisations. Instead of 24 hours after Day consultation same day, 3 days and 7 days will be used. 
+
+### 'Appropriate referral' summary - sensitivity analysis (hospitalisation cut-off same day of Day0)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES1}
+
+tab_pr_hos_sa1 <- sum.tab(d0, "pr_hos_sa1", "pre_post")
+tab_pr_hos.1_sa1 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos_sa1", "pre_post")
+
+#combine
+tab_pr_hos_sa1 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa1)-1))), tab_pr_hos_sa1), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa1)-1))), tab_pr_hos.1_sa1))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa1, row.names = F) 
+
+```
+
+### 'Appropriate referral' summary - sensitivity analysis (hospitalisation cut-off 3 days after Day0)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES2}
+
+
+tab_pr_hos_sa2 <- sum.tab(d0, "pr_hos_sa2", "pre_post")
+tab_pr_hos.1_sa2 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos_sa2", "pre_post")
+
+#combine
+tab_pr_hos_sa2 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa2)-1))), tab_pr_hos_sa2), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa2)-1))), tab_pr_hos.1_sa2))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa2, row.names = F) 
+
+```
+
+### 'Appropriate referral' summary - sensitivity analysis (hospitalisation cut-off 3 days of Day0)
+
+```{r PRIMARY HOSPITALISATION-SENSITIVITY ANALYSES3}
+
+tab_pr_hos_sa3 <- sum.tab(d0, "pr_hos_sa3", "pre_post")
+tab_pr_hos.1_sa3 <- sum.tab(d0[which(d0$urg_ref==1),], "pr_hos_sa3", "pre_post")
+
+#combine
+tab_pr_hos_sa3 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_pr_hos_sa3)-1))), tab_pr_hos_sa3), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_pr_hos.1_sa3)-1))), tab_pr_hos.1_sa3))
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_pr_hos_sa3, row.names = F) 
+
+```
+
+## Average length of stay (days) of children admitted to hospital
+
+Average length of stay is calculated only for hospitalised children.
+The table below summarises mean (standard deviation) and number hospitalised children.
+
+### Average length of stay summary
+
+```{r LENGTH OF STAY}
+
+los_tab_yi <- onerow.sum.tab(d0[which(d0$yg_infant==1),], vars=c("los"), vars_name=c("Under 2 months of age"), by="pre_post", med.c=F, mean.c=T)
+los_tab_ch <- onerow.sum.tab(d0[which(d0$yg_infant==0),], vars=c("los"), vars_name=c("2-59 months of age"), by="pre_post", med.c=F, mean.c=T)
+
+#combine young infant summary and old children summary
+los_tab <- rbind(los_tab_yi, los_tab_ch)
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(los_tab, row.names = F) 
+
+```
+
+## Proportion of children who completed referral as reported at Day7 follow-up
+
+A referral is considered completed if a child attended a hospital, with or without admission.
+
+### Completed referrals at Day7 summary
+
+```{r COMPLETED REFERRAL}
+
+tab_comp_ref_d7 <- sum.tab(d0, "comp_ref_d7", "pre_post")
+tab_comp_ref_d7.1 <- sum.tab(d0[which(d0$urg_ref==1),], "comp_ref_d7", "pre_post")
+
+#combine
+tab_comp_ref_d7 <- rbind(rbind(c("(Denominator: all children recruited)", rep("", (ncol(tab_comp_ref_d7)-1))), tab_comp_ref_d7), 
+                    rbind(c("(Denominator: children referred)", rep("", (ncol(tab_comp_ref_d7.1)-1))), tab_comp_ref_d7.1))
+
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_comp_ref_d7, row.names = F) 
+
+```
+
+## Proportion of children with non-severe disease referred to a higher level of care on Day0
+
+Due to the complexity of defining severe disease, please interpret with caution.
+
+### Referral with non-severe disease summary
+
+```{r CHILDREN WITH NON SEVERE DISEASE REFERRED}
+
+
+tab_ref_non_sev <- sum.tab(d0, "ref_non_sev", "pre_post")
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_ref_non_sev, row.names = F) 
+
+```
+
+## Proportion of children cured at Day7 follow-up
+
+### Cured children at Day7 summary
+
+```{r CURED CHILDREN}
+
+tab_cured_d7 <- sum.tab(d0, "cured_d7", "pre_post")
+
+#Modelling (combined and by country)
+
+```
+
+```{r, results='asis'}
+
+knitr::kable(tab_cured_d7, row.names = F) 
+
+```
+
+
+
+
+
